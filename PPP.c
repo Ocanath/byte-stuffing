@@ -86,4 +86,44 @@ int PPP_unstuff( uint8_t * payload, int payload_buffer_size, uint8_t * stuffed_b
 	return 0; //we have overrun the stuffed buffer without finding a frame character, meaning the buffer is improperly formed. return 0 length because payload is also invalid
 }
 
-
+/*
+* For an incoming stream of data, i.e. from a serial port
+* Returns payload size when the payload buffer contains a valid copy of the payload, and 0 otherwise
+* 
+* On an embedded system, this would be in a main loop after data is offloaded from an interrupt handler (arduino), or DMA (generic DMA on STM32 not using idle line detection for framing),
+* or in an interrupt handler (generic microcontroller implementation). Creating an arduino-like queue handling between this process in main and the interrupt handler
+* is preferred to avoid shared memory issues/race conditions
+* 
+* Wrapper for PPP_unstuff, essentially
+* 
+* INPUTS: 
+*	new_byte:
+*	payload_buffer_size:
+*	input_buffer_size
+* MEMORY/HELPER VARIABLES (PBR)
+*	input_buffer:
+*	bidx:
+* OUTPUTS:
+*	payload_buffer: result of PPP unstuffing
+*	returns: size of the payload buffer. valid 
+*/
+int parse_PPP_stream(uint8_t new_byte, uint8_t * payload_buffer, int payload_buffer_size, uint8_t * input_buffer, int input_buffer_size, int * bidx)
+{
+	if (*bidx < input_buffer_size)
+	{
+		input_buffer[(*bidx)++] = new_byte;
+	}
+	else
+	{
+		*bidx = 0;	//overwrite everything in the buffer in the buffer overflow case. can change to circular buffer in future implementations
+		return 0;
+	}
+	if (new_byte == FRAME_CHAR)
+	{
+		int pld_size = PPP_unstuff(payload_buffer, payload_buffer_size, input_buffer, (*bidx) );	//important to use buffer idx as input buffer size, because the section of the input buffer after buffer idx might contain partial data frames
+		(*bidx) = 0;
+		input_buffer[(*bidx)++] = new_byte;
+		return pld_size;	//in the case that it is zero, return 0 anyway
+	}
+	return 0;
+}

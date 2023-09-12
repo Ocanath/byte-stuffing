@@ -8,7 +8,7 @@
 
 
 uint8_t gl_stuffing_buffer[BUFFER_SIZE] = {0};
-
+uint8_t gl_unstuffing_buffer[BUFFER_SIZE] = {0};
 
 void print_hex_buffer(uint8_t * arr, int size)
 {
@@ -22,17 +22,18 @@ void print_hex_buffer(uint8_t * arr, int size)
 	}
 }
 
+
+
 void main()
 {
 	srand(time(NULL));
 
+	
 	uint8_t example_data[PAYLOAD_SIZE] = { 0 };
 	for (int i = 0; i < PAYLOAD_SIZE; i++)
 	{
 		example_data[i] = rand() % 0x100;
 	}
-		
-
 	printf("Original Data: ");
 	print_hex_buffer(example_data, PAYLOAD_SIZE);
 	printf("\r\n");
@@ -41,10 +42,32 @@ void main()
 	print_hex_buffer(gl_stuffing_buffer, stuffed_size);
 	printf("\r\nsize is %d\r\n", stuffed_size);
 
-	printf("Unstuffed data: ");
-	uint8_t pld_buf[64] = { 0 };//dummy buffer. For the purposes of an example, we're showing a working buffer for unstuff can be larger than the true payload size
-	int unstuffed_size = PPP_unstuff(pld_buf, 64, gl_stuffing_buffer, BUFFER_SIZE);
-	print_hex_buffer(pld_buf, unstuffed_size);
+	printf("Second payload: ");
+	for (int i = 0; i < 3; i++)
+		example_data[i] = rand() % 0x100;
+	example_data[3] = 0x7D;
+	print_hex_buffer(example_data, 4);
 	printf("\r\n");
+	int new_stuffed_size = PPP_stuff(example_data, 4, &gl_stuffing_buffer[stuffed_size], BUFFER_SIZE - stuffed_size);
+	print_hex_buffer(&gl_stuffing_buffer[stuffed_size], new_stuffed_size);
+	printf("\r\nsize is %d\r\n", new_stuffed_size);
+
+
+	int bidx = 0;
+	uint8_t pld_buf[64] = {0};
+	for(int i = 0; i < BUFFER_SIZE; i++)	
+	{
+		uint8_t new_byte = gl_stuffing_buffer[i];	//This is emulating a new byte coming in from hardware
+		
+		
+		int pld_size = parse_PPP_stream(new_byte, pld_buf, 64, gl_unstuffing_buffer, BUFFER_SIZE, &bidx);
+		if(pld_size != 0)	//handle pld size nonzero case (valid data). i.e. copy it, etc.
+		{
+			printf("Unstuffed stream payload is: ");
+			print_hex_buffer(pld_buf, pld_size);
+			printf("\r\n");
+		}
+	}
+	
 }
 
