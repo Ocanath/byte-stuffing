@@ -1,7 +1,7 @@
 #include <stdint.h>
 
-#define FRAME_CHAR 0x7D
-#define ESC_CHAR 0x7E
+#define FRAME_CHAR 0x7E
+#define ESC_CHAR 0x7D
 #define ESC_MASK 0x20
 
 
