@@ -1,9 +1,5 @@
 #include "PPP.h"
 
-/*Convenience global buffer declared here*/
-uint8_t gl_stuffing_buffer[BUFFER_SIZE] = {0};
-
-
 /*
 	Takes a payload and stuffs it based on PPP byte stuffing protocol. 
 	Result is available in a global fixed stuffing buffer
@@ -56,11 +52,11 @@ int PPP_stuff(uint8_t * payload, int payload_size, uint8_t * stuffed_buffer, int
 			Must be less than the actual bounds of the stuffed buffer, 
 			but the function may return without scanning up to this range.
 			Function will return after the first valid payload frame detected in the stuffed buffer
-		payload_size: the upper bound on the size of the working buffer, payload. prevents memory overrun
+		payload_size: the upper bound on the size of the working buffer, payload. prevents memory overrun. Can be larger than the actual payload size, which is a returned value
 		
 	Outputs:
 		payload: the working buffer. contains resulting unstuffed data after function returns successfully
-		returns: 0 on failure
+		returns: the actual size of the payload, after unstuffing operation is complete. returns 0 on failure
 */
 int PPP_unstuff( uint8_t * payload, int payload_buffer_size, uint8_t * stuffed_buffer, int stuffed_buffer_length)
 {
