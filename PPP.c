@@ -37,7 +37,7 @@ int PPP_stuff(uint8_t * payload, int payload_size, uint8_t * stuffed_buffer, int
 			stuffed_buffer[bidx++] = b;
 		}
 	}
-	stuffed_buffer[bidx++] = ESC_CHAR;
+	stuffed_buffer[bidx++] = FRAME_CHAR;
 	return bidx;
 }
 
@@ -74,7 +74,7 @@ int PPP_unstuff( uint8_t * payload, int payload_buffer_size, uint8_t * stuffed_b
 		 }
 		 else if(stuffed_buffer[i] == FRAME_CHAR)	//end of buffer, return 
 		 {
-			 return i;	
+			 return pld_idx;	
 		 }
 		 else	//unaffected data, 'normal' case
 		 {
