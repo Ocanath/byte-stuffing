@@ -1,8 +1,18 @@
-import struct
 import numpy as np
-import binascii	#for debugging only. python builtin so that's good
 
 
+"""
+	Stuffing function. Will mostly be unused, since it's only really good for PC to PC communication (microcontrollers have IDLE line detection)
+	or Arduinos via. serial
+	
+	Inputs: input array. Must be a bytearray type object! can create the following two ways:
+		example 1: input_barr = bytearray([1,2,3])
+		example 2: input_barr = np.uint8([1,2,3]).tobytes()
+	numpy supports ".tobytes()" which converts to bytearray type
+	
+	
+	returns a PPP stuffed bytearray
+"""
 def PPP_stuff(input_barr):
 	FRAME_CHAR = np.uint8(0x7E)
 	ESC_CHAR = np.uint8(0x7D)
@@ -31,7 +41,11 @@ def PPP_stuff(input_barr):
 	b = working_buf.tobytes()
 	return b
 	
-
+"""
+	Unstuff operation, which is basically a helper function for unstuff_PPP_stream
+	
+	also must be a bytearray type object. see above comment and test.py for more information
+"""
 def PPP_unstuff(input_barr):
 	FRAME_CHAR = np.uint8(0x7E)
 	ESC_CHAR = np.uint8(0x7D)
@@ -53,67 +67,26 @@ def PPP_unstuff(input_barr):
 	return b
 	
 	
+"""
+	Unstuffing, but it queues new bytes as they come in and performs framing logic on the stream.
+	Creates a local buffer starting with the first frame character found, and deletes it to restart every time there's a new frame character
 	
+	
+	In implementation, combine this with a CRC or checksum for data integrity confirmation. Alignment errors/dropped or malformed bytes can cause frames to pass which are malformed, and they should be rejected in those cases
+	
+	Must be called on input data ONE BYTE AT A TIME.
+	That means if you have an array, you gotta wrap this in a for loop.
+	
+	Hopefully speed isn't a problem... cuz it'll def break if so
+"""
 def unstuff_PPP_stream(new_byte, stuff_buffer):
 	FRAME_CHAR = np.uint8(0x7E)
 	
-	stuff_buffer = np.append(stuff_buffer,np.uint8(new_byte))
+	stuff_buffer = np.append(stuff_buffer, np.uint8(new_byte))
 	payload = np.array([]).tobytes()
 	if(new_byte == FRAME_CHAR):
 		payload = PPP_unstuff(stuff_buffer.tobytes())
 		stuff_buffer = np.array([np.uint8(new_byte)])	#reset stuff buffer size and cram the first element with the frame character
 		
 	return payload, stuff_buffer
-	
-	
-
-# payload = bytearray([1,0xFF,0x7E,0x5,0x7D,3,0x7E,0xAB,0xEF,0x7D,4])
-payload = np.uint8(np.random.randint(255,size=10)).tobytes()
-print("input: "+str(binascii.hexlify(payload)))
-stuffed_message = PPP_stuff(payload)
-
-
-wbf = np.frombuffer(stuffed_message, dtype = np.uint8).copy()
-nbf = np.frombuffer(PPP_stuff(bytearray([0x7E,0x7D,0xDE,0xAD])),np.uint8).copy()
-wbf = np.append(wbf, nbf)
-stuffed_message = wbf.tobytes()
-
-wbf = np.frombuffer(stuffed_message, dtype = np.uint8).copy()
-secondrandompayload = np.uint8(np.random.randint(255,size=1)).tobytes()
-nbf = np.frombuffer(PPP_stuff(secondrandompayload),np.uint8).copy()
-wbf = np.append(wbf, nbf)
-stuffed_message = wbf.tobytes()
-print("other random input: "+str(binascii.hexlify(secondrandompayload)))
-
-wbf = np.frombuffer(stuffed_message, dtype=np.uint8).copy()
-wbf = np.append(wbf, np.uint8([0,0x7E,0,0,0x7E,0,0,0,0x7E,0x7D,0x7E,0x7E,0x7D,0x45,0x7E]))
-stuffed_message=wbf.tobytes()
-
-
-print("Value to send to over a stream: " + str(binascii.hexlify(stuffed_message)))
-
-
-
-
-"""
-Test of unstuffing directly 
-"""
-# unstuffed = PPP_unstuff(stuffed)
-# print(binascii.hexlify(unstuffed))
-
-
-
-
-"""
-	Test unstuffing stream function with an emulated stream
-"""
-stuff_buffer = np.array([])
-for b in stuffed_message:
-	# print(hex(b))
-	payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
-	if(len(payload) != 0):
-		print("Payload = "+str(binascii.hexlify(payload)))
-		
-
-	
 	
