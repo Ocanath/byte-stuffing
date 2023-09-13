@@ -45,7 +45,7 @@ void main()
 	printf("Second payload: ");
 	for (int i = 0; i < 3; i++)
 		example_data[i] = rand() % 0x100;
-	example_data[3] = 0x7D;
+	example_data[3] = FRAME_CHAR;
 	print_hex_buffer(example_data, 4);
 	printf("\r\n");
 	int new_stuffed_size = PPP_stuff(example_data, 4, &gl_stuffing_buffer[stuffed_size], BUFFER_SIZE - stuffed_size);
