@@ -4,7 +4,7 @@ from PPP_stuffing import *
 import argparse
 import binascii
 import threading
-
+import queue
 
 """
 Intended use of this file:
@@ -19,52 +19,38 @@ Intended use of this file:
 
 	TODO: improve portability of receiver ? or implement as-is in various serial plotting demos
 """
-kill_sig = threading.Event()
-data_ready_sig = threading.Event()
-gl_payload = bytearray([])
 
-def kill_thread():
-	global kill_sig
+def kill_thread(kill_sig):
 	kill_sig.set()
 	input()
 	kill_sig.clear()
 	
 
-def serial_read_thread(ser):	
-	global kill_sig
-	global gl_payload
-	global data_ready_sig
-	
-	try:
-		stuff_buffer = np.array([])
-		while(kill_sig.is_set()):
+def serial_read_thread(ser, kill_sig, q):	
 		
-			"""
-				in-loop read
-			"""
-			bytes = ser.read()	#should be able to add arg to this
-			if(len(bytes) != 0):
-				npbytes = np.frombuffer(bytes, np.uint8)
-				for b in npbytes:
-					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
-					if(len(payload) != 0):
-						gl_payload = payload
-						data_ready_sig.set()
+	stuff_buffer = np.array([])
+	while(kill_sig.is_set()):
+	
+		"""
+			in-loop read
+		"""
+		bytes = ser.read()	#should be able to add arg to this
+		if(len(bytes) != 0):
+			npbytes = np.frombuffer(bytes, np.uint8)
+			for b in npbytes:
+				payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
+				if(len(payload) != 0):
+					q.put(payload)
+			
 
-	except KeyboardInterrupt:
-		pass
 
-
-def main_thread():
-	global gl_payload
-	global data_ready_sig
-	global kill_sig
+def main_thread(kill_sig, q):
 	
 	while(kill_sig.is_set()):
-		if(data_ready_sig.is_set()):
-			print("Payload = "+str(gl_payload.decode()))
-			# print("Payload = "+str(binascii.hexlify(gl_payload)))
-			# data_ready_sig.clear()
+		pld = q.get()
+		print("Payload = "+str(pld.decode()))
+		# print("Payload = "+str(binascii.hexlify(gl_payload)))
+		# data_ready_sig.clear()
 	
 
 if __name__ == "__main__":
@@ -102,10 +88,13 @@ if __name__ == "__main__":
 			pass
 
 	if(len(slist) > 0):
+
+		ks = threading.Event()
+		gl_q = queue.Queue()
 		
-		t0 = threading.Thread(target=kill_thread)
-		t1 = threading.Thread(target=serial_read_thread, args=(slist[0],))
-		t2 = threading.Thread(target=main_thread)
+		t0 = threading.Thread(target=kill_thread, args=(ks,))
+		t1 = threading.Thread(target=serial_read_thread, args=(slist[0], ks, gl_q,))
+		t2 = threading.Thread(target=main_thread, args=(ks, gl_q,) )
 		
 		t0.start()
 		t1.start()
