@@ -6,6 +6,23 @@ import time
 import string
 import random
 
+
+"""
+Intended use of this file:
+	if you run serial_receiver and serial_transmitter simultaneously,
+	with two CP2102's connected to your computer with TX-RX, RX-TX, GND-GND connections,
+	the message produced by the transmitter will be parsed and decoded correctly by the receiver
+	
+	You should be able to do whatever you want to the wires and the framing will always recover if the signal is good
+	
+	no checksum addition/parsing, but that's added on a higher implementation layer
+
+
+	TODO: improve portability of receiver ? or implement as-is in various serial plotting demos
+"""
+
+
+
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description='Serial PPP stuffing application parser')
