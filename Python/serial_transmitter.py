@@ -2,7 +2,9 @@ import serial
 from serial.tools import list_ports
 from PPP_stuffing import *
 import argparse
-
+import time
+import string
+import random
 
 if __name__ == "__main__":
 
@@ -38,9 +40,24 @@ if __name__ == "__main__":
 			print("failded.")
 			pass
 
-
-
-
-
+	# payload = bytearray("what the ground loop...",encoding='utf8')
+	# stuffed_payload = PPP_stuff(payload)
+	# slist[0].write(stuffed_payload)
+	
+	try:
+		iteration = 0
+		while(True):
+			strpayload = "wazzup biach " + str(iteration)
+			iteration = iteration + 1
+			print(strpayload)
+			
+			payload = bytearray(strpayload,encoding='utf8')
+			stuffed_payload = PPP_stuff(payload)
+			slist[0].write(stuffed_payload)
+			time.sleep(0.05)	#note: removing this delay doesn't break the software per-se (the algorithm to frame and decode chugs away without issue!) but it does cause windows to BSOD, probably due to a memory overrun of some sort on the CP2102 VCP driver.
+	except KeyboardInterrupt:
+		pass
+	
+	print("done");
 	for s in slist:
 		s.close()

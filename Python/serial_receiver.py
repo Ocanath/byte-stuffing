@@ -2,6 +2,7 @@ import serial
 from serial.tools import list_ports
 from PPP_stuffing import *
 import argparse
+import binascii
 
 
 if __name__ == "__main__":
@@ -39,8 +40,22 @@ if __name__ == "__main__":
 			pass
 
 
+	try:
+		stuff_buffer = np.array([])
+		while(True):
+			bytes = slist[0].read()	#should be able to add arg to this
+			if(len(bytes) != 0):
+				npbytes = np.frombuffer(bytes, np.uint8)
+				for b in npbytes:
+					# print(b)
+					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
+					if(len(payload) != 0):
+						# print("Payload = "+str(payload.decode()))
+						print("Payload = "+str(binascii.hexlify(payload)))
 
-
-
+	except KeyboardInterrupt:
+		pass
+	
+	print("done");
 	for s in slist:
 		s.close()
