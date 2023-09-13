@@ -3,7 +3,7 @@ from serial.tools import list_ports
 from PPP_stuffing import *
 import argparse
 import binascii
-
+import time
 
 """
 Intended use of this file:
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 		try:
 			ser = []
 			if( (args.CP210x_only == False) or  (args.CP210x_only == True and (p[1].find('CP210x') != -1) or p[1].find('USB Serial Port') != -1) ):
-				ser = (serial.Serial(p[0],'460800', timeout = 1))
+				ser = (serial.Serial(p[0],'460800', timeout = 0))
 				slist.append(ser)
 				print ("connected!", p)
 				break
@@ -59,16 +59,29 @@ if __name__ == "__main__":
 	try:
 		stuff_buffer = np.array([])
 		while(True):
-			bytes = slist[0].read()	#should be able to add arg to this
-			if(len(bytes) != 0):
-				npbytes = np.frombuffer(bytes, np.uint8)
-				for b in npbytes:
-					# print(b)
-					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
-					if(len(payload) != 0):
-						print("Payload = "+str(payload.decode()))
-						# print("Payload = "+str(binascii.hexlify(payload)))
+			
+			while(slist[0].in_waiting != 0):	#dump all the data
+				bytes = slist[0].read(1024)	#gigantic read size with nonblocking
+				if(len(bytes) != 0): #redundant, but fine to keep
+					npbytes = np.frombuffer(bytes, np.uint8)
+					for b in npbytes:
+						payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
+						if(len(payload) != 0):
+							
+							#parse payload here
+							print("Payload = "+str(payload.decode()))	#parse
+							# print("Payload = "+str(binascii.hexlify(payload)))
 
+
+							#Optional: Dump any remaining data
+							# while(slist[0].in_waiting != 0):	
+								# bytes = slist[0].read(1024)
+								
+
+			
+			time.sleep(0.1)
+			if(slist[0].in_waiting != 0):
+				print(slist[0].in_waiting)
 	except KeyboardInterrupt:
 		pass
 	

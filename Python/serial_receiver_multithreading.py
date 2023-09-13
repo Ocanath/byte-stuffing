@@ -5,6 +5,7 @@ import argparse
 import binascii
 import threading
 import queue
+import time
 
 """
 Intended use of this file:
@@ -24,12 +25,13 @@ def kill_thread(kill_sig):
 	kill_sig.set()
 	input()
 	kill_sig.clear()
+	print("kill sig sent")
 	
 
 def serial_read_thread(ser, kill_sig, q):	
 		
 	stuff_buffer = np.array([])
-	while(kill_sig.is_set()):
+	while(kill_sig.is_set() == True):
 	
 		"""
 			in-loop read
@@ -41,17 +43,22 @@ def serial_read_thread(ser, kill_sig, q):
 				payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
 				if(len(payload) != 0):
 					q.put(payload)
-			
+					
+	print("Read thread complete")
 
 
 def main_thread(kill_sig, q):
 	
-	while(kill_sig.is_set()):
-		pld = q.get()
-		print("Payload = "+str(pld.decode()))
+	while(kill_sig.is_set() == True):
+		try:
+			pld = q.get(block=True, timeout=0.01)
+			print("Payload = "+str(pld.decode()))
+		except queue.Empty:
+			pass
+		time.sleep(0.05)
 		# print("Payload = "+str(binascii.hexlify(gl_payload)))
 		# data_ready_sig.clear()
-	
+	print("Print thread complete")
 
 if __name__ == "__main__":
 
@@ -90,11 +97,11 @@ if __name__ == "__main__":
 	if(len(slist) > 0):
 
 		ks = threading.Event()
-		gl_q = queue.Queue()
+		gl_q = queue.Queue(maxsize=1)
 		
-		t0 = threading.Thread(target=kill_thread, args=(ks,))
-		t1 = threading.Thread(target=serial_read_thread, args=(slist[0], ks, gl_q,))
-		t2 = threading.Thread(target=main_thread, args=(ks, gl_q,) )
+		t0 = threading.Thread(target=kill_thread, args=(ks,), daemon=True)
+		t1 = threading.Thread(target=serial_read_thread, args=(slist[0], ks, gl_q,), daemon=True)
+		t2 = threading.Thread(target=main_thread, args=(ks, gl_q,), daemon=True )
 		
 		t0.start()
 		t1.start()
