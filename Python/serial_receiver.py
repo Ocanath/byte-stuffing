@@ -66,8 +66,8 @@ if __name__ == "__main__":
 					# print(b)
 					payload, stuff_buffer = unstuff_PPP_stream(b,stuff_buffer)
 					if(len(payload) != 0):
-						# print("Payload = "+str(payload.decode()))
-						print("Payload = "+str(binascii.hexlify(payload)))
+						print("Payload = "+str(payload.decode()))
+						# print("Payload = "+str(binascii.hexlify(payload)))
 
 	except KeyboardInterrupt:
 		pass
