@@ -71,7 +71,7 @@ if __name__ == "__main__":
 			payload = bytearray(strpayload,encoding='utf8')
 			stuffed_payload = PPP_stuff(payload)
 			slist[0].write(stuffed_payload)
-			time.sleep(0.05)	#note: removing this delay doesn't break the software per-se (the algorithm to frame and decode chugs away without issue!) but it does cause windows to BSOD, probably due to a memory overrun of some sort on the CP2102 VCP driver.
+			# time.sleep(0.05)	#note: removing this delay doesn't break the software per-se (the algorithm to frame and decode chugs away without issue!) but it does cause windows to BSOD, probably due to a memory overrun of some sort on the CP2102 VCP driver.
 	except KeyboardInterrupt:
 		pass
 	
