@@ -54,7 +54,7 @@ if __name__ == "__main__":
 				print ("connected!", p)
 				break
 		except:
-			print("failded.")
+			print("failed.")
 			pass
 
 	# payload = bytearray("what the ground loop...",encoding='utf8')
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 	try:
 		iteration = 0
 		while(True):
-			strpayload = "wazzup biach " + str(iteration)
+			strpayload = "this is a message" + str(iteration)
 			iteration = iteration + 1
 			print(strpayload)
 			
