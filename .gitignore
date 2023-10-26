@@ -1,3 +1,10 @@
+*/.vs
+.vs
+x64/
+rt-plotter-sdl/x64/
+Python/__pycache__/
+enc_temp_folder
+tmp-workspace/
 *.exe
 *.h.gch
 ***/__pycache__/
