@@ -8,3 +8,5 @@ tmp-workspace/
 *.exe
 *.h.gch
 ***/__pycache__/
+***/Release/***
+***/Debug/***

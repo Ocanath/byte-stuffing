@@ -129,13 +129,14 @@ int main(int argc, char* args[])
 	float fpos[6] = { 15.f ,15.f, 15.f, 15.f, 15.f, -15.f };
 	uint64_t start_time = GetTickCount64();
 	uint64_t tx_ts = 0;
+
 	while (1)
 	{
 		uint64_t tick = GetTickCount64() - start_time;
 		
-		if (tick - tx_ts > 10)
+		//if (tick - tx_ts > 1)
 		{
-			//tx_ts = tick;
+			tx_ts = tick;
 
 			float t = ((float)tick) * 0.001f;
 
@@ -145,15 +146,14 @@ int main(int argc, char* args[])
 			}
 			fpos[5] = -fpos[5];
 
-			int size = create_abh_pctl_buf(0x50, 0, fpos, gl_ppp_tx_prestuffing_buffer);
+			int size = create_abh_pctl_buf(0x50, 2, fpos, gl_ppp_tx_prestuffing_buffer);
 			int stuffed_size = PPP_stuff(gl_ppp_tx_prestuffing_buffer, size, gl_ppp_stuffing_buffer, UNSTUFFING_BUFFER_SIZE);
 
 			LPDWORD num_bytes_written = 0;
 			WriteFile(serialport, gl_ppp_stuffing_buffer, stuffed_size, (LPDWORD)(&num_bytes_written), NULL);
 		}
 
-
-		for (uint64_t st = GetTickCount64(); (GetTickCount64() - st) < 100;)
+		//for (uint64_t st = GetTickCount64(); (GetTickCount64() - st) < 200;)
 		{
 			LPDWORD num_bytes_read = 0;
 			int rc = ReadFile(serialport, gl_ser_readbuf, 512, (LPDWORD)(&num_bytes_read), NULL);	//should be a DOUBLE BUFFER!
@@ -161,13 +161,14 @@ int main(int argc, char* args[])
 			{
 				uint8_t new_byte = gl_ser_readbuf[i];
 				int pld_size = parse_PPP_stream(new_byte, gl_ppp_payload_buffer, PAYLOAD_SIZE, gl_ppp_unstuffing_buffer, UNSTUFFING_BUFFER_SIZE, &gl_ppp_bidx);
-				if (pld_size > 0)
+				if (pld_size != 0)
 				{
 					//printf("0x");
 					//for (int bi = 0; bi < pld_size; bi++)
 					//	printf("%0.2X", gl_ppp_payload_buffer[bi]);
 					//printf("\r\n");
-					st = 0;
+					
+					//st = 0;
 				}
 			}
 		}
