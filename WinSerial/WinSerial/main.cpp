@@ -135,6 +135,11 @@ int main(int argc, char* args[])
 	printf("Starting comm analysis...\r\n");
 	uint64_t start_tick = GetTickCount64();
 	std::vector<uint8_t> readbuf;
+
+
+
+	//WriteFile(serialport, gl_ppp_stuffing_buffer, stuffed_size, (LPDWORD)(&num_bytes_written), NULL);
+
 	while (total_replies < 1000)
 	{
 		uint64_t tick = GetTickCount64() - start_tick;
@@ -158,18 +163,26 @@ int main(int argc, char* args[])
 					int16_t x[3] = { 0 };
 					int16_t y[3] = { 0 };
 					int16_t V[3] = { 0 };
+					int16_t pixRes[3] = { 0 };
+					int16_t* pArr[4] = { x, y, V, pixRes };
 					if (startidx >= 0)
 					{
 						printf("%X%X%X%0.2X: ", readbuf[startidx], readbuf[startidx + 1], readbuf[startidx + 2], readbuf[startidx + 3]);
 						int bufidx = startidx + 4;
 						for (int target = 0; target < 3; target++)
 						{
-							x[target] = (((int16_t)(readbuf[bufidx])) << 8) | ((int16_t)(readbuf[bufidx + 1]));
-							bufidx += 2;
-							y[target] = (((int16_t)(readbuf[bufidx])) << 8) | ((int16_t)(readbuf[bufidx + 1]));
-							bufidx += 2;
-							V[target] = (((int16_t)(readbuf[bufidx])) << 8) | ((int16_t)(readbuf[bufidx + 1]));
-							bufidx += 4;
+							for (int arridx = 0; arridx < 4; arridx++)
+							{
+								int32_t tmp = 0;
+								uint8_t b1 = readbuf[bufidx];
+								uint8_t b2 = readbuf[bufidx + 1]; 
+								tmp = (int32_t)b1 + ((int32_t)b2 * 256);
+								if (tmp < 0x8000)
+									pArr[arridx][target] = (int16_t)(0 - tmp);
+								else
+									pArr[arridx][target] = (int16_t)(tmp - 0x8000);
+								bufidx += 2;
+							}
 							printf("(%d,%d,%d) ", x[target], y[target], V[target]);
 						}
 						printf("\r\n");
