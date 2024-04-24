@@ -53,7 +53,6 @@ uint8_t get_checksum(uint8_t* arr, int size)
 	return -checksum;
 }
 
-
 /*
 * Inputs:
 *	input_buf: raw unstuffed data buffer
@@ -135,54 +134,48 @@ int main(int argc, char* args[])
 	int valid_reply_count = 0;
 	printf("Starting comm analysis...\r\n");
 	uint64_t start_tick = GetTickCount64();
+	std::vector<uint8_t> readbuf;
 	while (total_replies < 1000)
 	{
 		uint64_t tick = GetTickCount64() - start_tick;
 		
-		//if (tick - tx_ts > 1)
-		{
-			tx_ts = tick;
-
-			float t = ((float)tick) * 0.001f;
-
-			for (int ch = 0; ch < 6; ch++)
-			{
-				fpos[ch] = (-0.5f * (float)cos((double)t + (double)ch) + 0.5f) * 50.f + 10.f;
-			}
-			fpos[5] = -fpos[5];
-
-			int size = create_abh_pctl_buf(0x50, 2, fpos, gl_ppp_tx_prestuffing_buffer);
-			int stuffed_size = PPP_stuff(gl_ppp_tx_prestuffing_buffer, size, gl_ppp_stuffing_buffer, UNSTUFFING_BUFFER_SIZE);
-
-			LPDWORD num_bytes_written = 0;
-			WriteFile(serialport, gl_ppp_stuffing_buffer, stuffed_size, (LPDWORD)(&num_bytes_written), NULL);
-		}
-
 		{
 			LPDWORD num_bytes_read = 0;
 			int rc = ReadFile(serialport, gl_ser_readbuf, 512, (LPDWORD)(&num_bytes_read), NULL);	//should be a DOUBLE BUFFER!
 			for (int i = 0; i < (int)num_bytes_read; i++)
 			{
 				uint8_t new_byte = gl_ser_readbuf[i];
-				int pld_size = parse_PPP_stream(new_byte, gl_ppp_payload_buffer, PAYLOAD_SIZE, gl_ppp_unstuffing_buffer, UNSTUFFING_BUFFER_SIZE, &gl_ppp_bidx);
-				if (pld_size != 0)
+				readbuf.push_back(new_byte);
+			}
+			//printf("size=%d\r\n", readbuf.size());
+			for (int i = 0; i < ((int)readbuf.size())-1; i++)
+			{
+				if (readbuf[i] == 0x55 && readbuf[i+1] == 0xCC)
 				{
-					total_replies++;
-					uint8_t chk = get_checksum(gl_ppp_payload_buffer, pld_size - 1);
-					if (pld_size == 72 || pld_size == 39 && gl_ppp_payload_buffer[pld_size-1] == chk)
-					{
-						valid_reply_count++;
-					}
-					else
-					{
-						printf("fail\r\n");
-					}
-					//printf("0x");
-					//for (int bi = 0; bi < pld_size; bi++)
-					//	printf("%0.2X", gl_ppp_payload_buffer[bi]);
-					//printf("\r\n");
 					
-					//st = 0;
+					//printf("%d\r\n", i);
+					int startidx = i - 28;
+					int16_t x[3] = { 0 };
+					int16_t y[3] = { 0 };
+					int16_t V[3] = { 0 };
+					if (startidx >= 0)
+					{
+						printf("%X%X%X%0.2X: ", readbuf[startidx], readbuf[startidx + 1], readbuf[startidx + 2], readbuf[startidx + 3]);
+						int bufidx = startidx + 4;
+						for (int target = 0; target < 3; target++)
+						{
+							x[target] = (((int16_t)(readbuf[bufidx])) << 8) | ((int16_t)(readbuf[bufidx + 1]));
+							bufidx += 2;
+							y[target] = (((int16_t)(readbuf[bufidx])) << 8) | ((int16_t)(readbuf[bufidx + 1]));
+							bufidx += 2;
+							V[target] = (((int16_t)(readbuf[bufidx])) << 8) | ((int16_t)(readbuf[bufidx + 1]));
+							bufidx += 4;
+							printf("(%d,%d,%d) ", x[target], y[target], V[target]);
+						}
+						printf("\r\n");
+						
+					}
+					readbuf.clear();
 				}
 			}
 		}

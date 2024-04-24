@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 cmd_options_t gl_options = {
-	460800,	//baud rate
+	256000,	//baud rate
 };
 
 /*
