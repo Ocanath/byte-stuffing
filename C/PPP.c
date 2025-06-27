@@ -16,28 +16,28 @@
 		returns: the length of the stuffed buffer, or 0 if the stuffed buffer is overrun
 		
 */
-int PPP_stuff(uint8_t * payload, int payload_size, uint8_t * stuffed_buffer, int stuffed_buffer_size)
+int PPP_stuff(buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
 {
 	int bidx = 0;
-	stuffed_buffer[bidx++] = FRAME_CHAR;
-	for(int i = 0; i < payload_size; i++)
+	stuffed_buffer->buf[bidx++] = FRAME_CHAR;
+	for(int i = 0; i < unstuffed_buffer->length; i++)
 	{
-		uint8_t b = payload[i];
+		uint8_t b = unstuffed_buffer->buf[i];
 		if( (b == FRAME_CHAR) || (b == ESC_CHAR) )
 		{
-			if(bidx + 1 >= stuffed_buffer_size)
+			if(bidx + 1 >= stuffed_buffer->size)
 				return 0;
-			stuffed_buffer[bidx++] = ESC_CHAR;
-			stuffed_buffer[bidx++] = b ^ ESC_MASK;
+			stuffed_buffer->buf[bidx++] = ESC_CHAR;
+			stuffed_buffer->buf[bidx++] = b ^ ESC_MASK;
 		}
 		else
 		{
-			if(bidx >= stuffed_buffer_size)
+			if(bidx >= stuffed_buffer->size)
 				return 0;
-			stuffed_buffer[bidx++] = b;
+			stuffed_buffer->buf[bidx++] = b;
 		}
 	}
-	stuffed_buffer[bidx++] = FRAME_CHAR;
+	stuffed_buffer->buf[bidx++] = FRAME_CHAR;
 	return bidx;
 }
 
@@ -58,29 +58,29 @@ int PPP_stuff(uint8_t * payload, int payload_size, uint8_t * stuffed_buffer, int
 		payload: the working buffer. contains resulting unstuffed data after function returns successfully
 		returns: the actual size of the payload, after unstuffing operation is complete. returns 0 on failure
 */
-int PPP_unstuff( uint8_t * payload, int payload_buffer_size, uint8_t * stuffed_buffer, int stuffed_buffer_length)
+int PPP_unstuff( buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
 {
-	if(stuffed_buffer[0] != FRAME_CHAR)
+	if(stuffed_buffer->buf[0] != FRAME_CHAR)
 		return 0;
 	int pld_idx = 0;	//payload/working buffer index, starts at 0
-	for(int i = 1; i < stuffed_buffer_length; i++)
+	for(int i = 1; i < stuffed_buffer->length; i++)
 	{
-		 if(stuffed_buffer[i] == ESC_CHAR)	//marks prepend of xored data. xor again to recover the original value
+		 if(stuffed_buffer->buf[i] == ESC_CHAR)	//marks prepend of xored data. xor again to recover the original value
 		 {
 			 i++; //skip to the next value
-			 if(i >= stuffed_buffer_length || pld_idx >= payload_buffer_size)	//memory overrun guards. do two because we could overrun the while loop guards here
+			 if(i >= stuffed_buffer->length || pld_idx >= unstuffed_buffer->size)	//memory overrun guards. do two because we could overrun the while loop guards here
 				 return 0;
-			 payload[pld_idx++] = stuffed_buffer[i] ^ ESC_MASK;
+			 unstuffed_buffer->buf[pld_idx++] = stuffed_buffer->buf[i] ^ ESC_MASK;
 		 }
-		 else if(stuffed_buffer[i] == FRAME_CHAR)	//end of buffer, return 
+		 else if(stuffed_buffer->buf[i] == FRAME_CHAR)	//end of buffer, return 
 		 {
 			 return pld_idx;	
 		 }
 		 else	//unaffected data, 'normal' case
 		 {
-			 if(pld_idx >= payload_buffer_size)
+			 if(pld_idx >= unstuffed_buffer->size)
 				 return 0;
-			 payload[pld_idx++] = stuffed_buffer[i];
+			 unstuffed_buffer->buf[pld_idx++] = stuffed_buffer->buf[i];
 		 }
 	}
 	return 0; //we have overrun the stuffed buffer without finding a frame character, meaning the buffer is improperly formed. return 0 length because payload is also invalid
@@ -107,22 +107,22 @@ int PPP_unstuff( uint8_t * payload, int payload_buffer_size, uint8_t * stuffed_b
 *	payload_buffer: result of PPP unstuffing
 *	returns: size of the payload buffer. valid 
 */
-int parse_PPP_stream(uint8_t new_byte, uint8_t * payload_buffer, int payload_buffer_size, uint8_t * input_buffer, int input_buffer_size, int * bidx)
+int parse_PPP_stream(uint8_t new_byte, buffer_t * unstuffed_buffer, buffer_t * input_buffer)
 {
-	if (*bidx < input_buffer_size)
+	if (input_buffer->length < input_buffer->size)
 	{
-		input_buffer[(*bidx)++] = new_byte;
+		input_buffer->buf[input_buffer->length++] = new_byte;
 	}
 	else
 	{
-		*bidx = 0;	//overwrite everything in the buffer in the buffer overflow case. can change to circular buffer in future implementations
+		input_buffer->length = 0;	//overwrite everything in the buffer in the buffer overflow case. can change to circular buffer in future implementations
 		return 0;
 	}
 	if (new_byte == FRAME_CHAR)
 	{
-		int pld_size = PPP_unstuff(payload_buffer, payload_buffer_size, input_buffer, (*bidx) );	//important to use buffer idx as input buffer size, because the section of the input buffer after buffer idx might contain partial data frames
-		(*bidx) = 0;
-		input_buffer[(*bidx)++] = new_byte;
+		int pld_size = PPP_unstuff(unstuffed_buffer, input_buffer);	//important to use buffer idx as input buffer size, because the section of the input buffer after buffer idx might contain partial data frames
+		input_buffer->length = 0;
+		input_buffer->buf[input_buffer->length++] = new_byte;
 		return pld_size;	//in the case that it is zero, return 0 anyway
 	}
 	return 0;
