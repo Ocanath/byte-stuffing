@@ -197,5 +197,32 @@ void test_cobs_encode(void)
 		}
 		TEST_ASSERT_EQUAL(0, msg.buf[msg.length-1]);
 	}
+	{
+		unsigned char msg_buf[257] = {0};	
+		/*similar to previous test, in that this is the max block size,
+		 just shifted in a message which has smaller blocks in the beginning.
+		  In this case a single block of size 1 (a zero byte)*/
+		for(int i = 0; i < 255; i++)		
+		{
+			msg_buf[i] = i;
+		}
+		cobs_buf_t msg = {
+			.buf = msg_buf,
+			.size = sizeof(msg_buf),
+			.length = 255,
+			.state = COBS_DECODED
+		};
+		TEST_ASSERT_EQUAL(0xFE, msg.buf[msg.length-1]);
+		int rc = cobs_encode(&msg);
+		TEST_ASSERT_EQUAL(0, rc);
+		TEST_ASSERT_EQUAL(257, msg.length);
+		TEST_ASSERT_EQUAL(0x1, msg.buf[0]);
+		TEST_ASSERT_EQUAL(0xFF, msg.buf[1]);
+		for(int i = 2; i < msg.length-1; i++)
+		{
+			TEST_ASSERT_EQUAL(i-1, msg.buf[i]);
+		}
+		TEST_ASSERT_EQUAL(0, msg.buf[msg.length-1]);
+	}
 
 }
