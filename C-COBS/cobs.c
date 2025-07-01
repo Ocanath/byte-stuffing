@@ -26,12 +26,25 @@ int cobs_encode(cobs_buf_t * msg)
 	msg->buf[msg->length++] = 0;	//append delimiter byte
 
 	int pointer_idx = 0;
+	int block_start = 1;//index of the first byte of the current block. Used primarily for pointer overflow handling
 	for(int i = 1; i < msg->length; i++)
 	{
 		if(msg->buf[i] == 0)
 		{
-			msg->buf[pointer_idx] = i - pointer_idx;	//we already shift by 1 when we start analyzing the shifted payload, so this load works
+			int pointer_value = i - pointer_idx;
+			if(pointer_value > 0xFF)
+			{
+				return -1;	//pointer overflow. This could happen if a malformed packet is sent
+			}
+			msg->buf[pointer_idx] = (unsigned char)pointer_value;	//we already shift by 1 when we start analyzing the shifted payload, so this load works
 			pointer_idx = i;	//the zero bytes are always replaced by pointers
+			block_start = i + 1;
+		}
+		else if(i - block_start >= 254)
+		{
+			msg->buf[pointer_idx] = 0xFF;
+			pointer_idx = i;
+			block_start = i;	//off by 1 error?
 		}
 	}
 
