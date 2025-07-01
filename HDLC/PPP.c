@@ -38,6 +38,7 @@ int PPP_stuff(buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
 		}
 	}
 	stuffed_buffer->buf[bidx++] = FRAME_CHAR;
+	stuffed_buffer->length = bidx;
 	return bidx;
 }
 

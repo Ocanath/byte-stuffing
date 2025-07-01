@@ -101,8 +101,10 @@
     - -:test/support
   :source:
     - HDLC/**
+    - C-COBS/**
   :include:
     - HDLC/** # In simple projects, this entry often duplicates :source
+    - C-COBS/**
   :support:
     - test/support
   :libraries: []

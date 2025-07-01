@@ -127,6 +127,8 @@ void test_PPP_unstuff_basic(void)
     // Stuff the data first
     int stuffed_size = PPP_stuff(&unstuffed_buffer, &stuffed_buffer);
     TEST_ASSERT_GREATER_THAN(0, stuffed_size);
+    TEST_ASSERT_GREATER_THAN(0, stuffed_buffer.length);
+    TEST_ASSERT_EQUAL(stuffed_buffer.length, stuffed_size);
     
     // Reset unstuffed buffer
     memset(example_data, 0, PAYLOAD_SIZE);
