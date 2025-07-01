@@ -18,7 +18,7 @@ int cobs_encode(cobs_buf_t * msg)
 
 	//shift the entire buffer up by one index. 
 	//Note: this is unnecessary if cobs_buf_t tracks two pointers; one for 'encoded' and one for 'decoded' on the same run of memory, off by 1. 
-	for(int i = msg->length-1; i > 0; i--)
+	for(int i = msg->length-1; i >= 0; i--)
 	{
 		msg->buf[i+1] = msg->buf[i];
 	}
