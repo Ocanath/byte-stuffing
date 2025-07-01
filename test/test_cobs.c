@@ -224,5 +224,19 @@ void test_cobs_encode(void)
 		}
 		TEST_ASSERT_EQUAL(0, msg.buf[msg.length-1]);
 	}
-
+	{//test overflow
+		unsigned char large_msg_buf[1024] = {};
+		for(int i = 0; i < sizeof(large_msg_buf)-2; i++)
+		{
+			large_msg_buf[i] = (i+1) % 512;
+		}
+		cobs_buf_t msg = {
+			.buf = large_msg_buf,
+			.size = sizeof(large_msg_buf),
+			.length = sizeof(large_msg_buf)-2,
+			.state = COBS_DECODED
+		};
+		int rc = cobs_encode(&msg);
+		printf("%d\r\n",rc);
+	}
 }
