@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug test_PPP",
+            "name": "Debug test_cobs",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/test/out/test_PPP/test_PPP.out",
+            "program": "${workspaceFolder}/build/test/out/test_cobs/test_cobs.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

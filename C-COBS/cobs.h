@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <assert.h>
 
+#define COBS_MIN_BUF_SIZE	3
+
+
 typedef enum {COBS_DECODED, COBS_ENCODED} cobs_state_t;
 
 typedef struct cobs_buf_t
