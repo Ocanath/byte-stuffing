@@ -47,16 +47,6 @@ int cobs_encode(cobs_buf_t * msg)
 			block_start = i + 1;
 		}
 	}
-	//TODO: the final block may not be properly handled by this code.
-	// if(pointer_idx < msg->length - 1)  // If there's a final block
-	// {
-	// 	int final_pointer = msg->length - 1 - pointer_idx;
-	// 	if(final_pointer > 0xFF)
-	// 	{
-	// 		return -1;  // Final block too long
-	// 	}
-	// 	msg->buf[pointer_idx] = (unsigned char)final_pointer;
-	// }	
 
 	msg->state = COBS_ENCODED;
 	return COBS_SUCCESS;
