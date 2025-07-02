@@ -8,12 +8,12 @@ int cobs_encode(cobs_buf_t * msg)
 	//Encoding an encoded buffer should be allowed. This could be useful for forwarding to 'stupid' devices with constrained COBS handling (take in stream and forward unstuffed payload)
 	if(msg == NULL)
 	{
-		return -1;	//null pointer check
+		return COBS_ERROR_NULL_POINTER;	//null pointer check
 	}
 	//overrun check. we offset the buffer by one to prepend the pointer, and index into length+2 to append the delimiter, so this is critical for memory safety
-	if(msg->length + 2 > msg->size || msg->size < COBS_MIN_BUF_SIZE)
+	if(msg->length == 0 || msg->length + 2 > msg->size || msg->size < COBS_MIN_BUF_SIZE)
 	{
-		return -1;
+		return COBS_ERROR_SIZE;
 	}
 
 	//shift the entire buffer up by one index. 
@@ -44,11 +44,43 @@ int cobs_encode(cobs_buf_t * msg)
 		{
 			msg->buf[pointer_idx] = 0xFF;
 			pointer_idx = i;
-			block_start = i;	//off by 1 error?
+			block_start = i + 1;
 		}
 	}
+	//TODO: the final block may not be properly handled by this code.
+	// if(pointer_idx < msg->length - 1)  // If there's a final block
+	// {
+	// 	int final_pointer = msg->length - 1 - pointer_idx;
+	// 	if(final_pointer > 0xFF)
+	// 	{
+	// 		return -1;  // Final block too long
+	// 	}
+	// 	msg->buf[pointer_idx] = (unsigned char)final_pointer;
+	// }	
 
 	msg->state = COBS_ENCODED;
-	return 0;
+	return COBS_SUCCESS;
 }
 
+int cobs_stream(unsigned char new_byte, cobs_buf_t *msg)
+{
+	if(msg == NULL)
+	{
+		return COBS_ERROR_NULL_POINTER;
+	}
+	if(msg->length + 1 > msg->size)
+	{
+		return COBS_ERROR_SERIAL_OVERRUN;
+	}
+	msg->buf[msg->length++] = new_byte;
+	if(new_byte == 0)
+	{
+		msg->state = COBS_ENCODED;
+		return COBS_SUCCESS;
+	}
+	else
+	{
+		msg->state = COBS_STREAMING;
+	}
+	return COBS_STREAMING_IN_PROGRESS;
+}

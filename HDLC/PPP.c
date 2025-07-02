@@ -58,6 +58,17 @@ int PPP_stuff(buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
 	Outputs:
 		payload: the working buffer. contains resulting unstuffed data after function returns successfully
 		returns: the actual size of the payload, after unstuffing operation is complete. returns 0 on failure
+
+
+
+
+	!!!!!!!!!!!!!!!!!!!!!IMPORTANT!!!!!!!!!!!!!!!!!!!!!
+	DON'T TRUST THIS FUNCTION. When I switched to buffer_t, 
+	I used ->length instead of *bidx for stream index tracking and 
+	i'm not sure that works correctly.
+
+	This function requires explicit unit testing. Once I add it i'll delte this comment.
+	TODO: what you have to do to clear this comment.
 */
 int PPP_unstuff( buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
 {

@@ -7,7 +7,10 @@
 #define COBS_MIN_BUF_SIZE	3
 
 
-typedef enum {COBS_DECODED, COBS_ENCODED} cobs_state_t;
+typedef enum {COBS_DECODED, COBS_ENCODED, COBS_STREAMING} cobs_state_t;
+
+enum {COBS_SUCCESS = 0, COBS_ERROR_NULL_POINTER = -1, COBS_ERROR_SIZE = -2, COBS_ERROR_POINTER_OVERFLOW = -4, COBS_ERROR_SERIAL_OVERRUN = -5, COBS_STREAMING_IN_PROGRESS = COBS_STREAMING};
+
 
 typedef struct cobs_buf_t
 {
@@ -18,10 +21,10 @@ typedef struct cobs_buf_t
 } cobs_buf_t;
 
 //Function template for basic cobs decoding. Takes an ENCODED buffer and decodes it into a DECODED buffer.
-int cobs_decode(cobs_buf_t *cobs_buf);
+int cobs_decode(cobs_buf_t * msg);
 //Function template for basic cobs encoding. Takes a DECODED buffer and encodes it into an ENCODED buffer.
-int cobs_encode(cobs_buf_t *cobs_buf);
+int cobs_encode(cobs_buf_t * msg);
 //Function template to handle an incoming byte stream. Uses ZERO as the delimiter, and decodes the stream into a DECODED buffer.
-int cobs_stream(unsigned char new_byte, cobs_buf_t *cobs_buf);
+int cobs_stream(unsigned char new_byte, cobs_buf_t * msg);
 
 #endif

@@ -30,7 +30,7 @@ void test_cobs_encode_small_buffer(void)
 		.state = COBS_DECODED
 	};
 	int rc = cobs_encode(&msg);
-	TEST_ASSERT_EQUAL(-1, rc);	//should return -1 due to the buffer being too small. 
+	TEST_ASSERT_EQUAL(COBS_ERROR_SIZE, rc);	//should return -1 due to the buffer being too small. 
 }
 
 void test_cobs_encode(void)
