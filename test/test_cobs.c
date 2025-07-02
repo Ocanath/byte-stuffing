@@ -241,6 +241,16 @@ void test_cobs_encode(void)
 	}
 }
 
+void printf_cobs_buf(cobs_buf_t * pcb)
+{
+	int i = 0;			
+	for(i = 0; i < pcb->length - 1 && i < pcb->size; i++)
+	{
+		printf("0x%.2X, ", pcb->buf[i]);
+	}
+	printf("0x%.2X\r\n", pcb->buf[i]);
+}
+
 void test_cobs_decode_double_buffer(void)
 {
 	{
@@ -284,5 +294,99 @@ void test_cobs_decode_double_buffer(void)
 		TEST_ASSERT_EQUAL(33, decode.buf[3]);
 		TEST_ASSERT_EQUAL(4, decode.length);
 		TEST_ASSERT_EQUAL(COBS_DECODED, decode.encoded_state);
+	}
+
+
+
+	{
+		/*Begin new test message cases. Add for more coverage */
+		const unsigned char msg1[] = {11, 0, 0, 0};
+		const unsigned char msg2[] = {11, 12, 13, 0};
+		const unsigned char msg3[] = {11, 0, 12, 13};
+		const unsigned char msg4[] = {11, 0, 0, 13,15,16};
+		const unsigned char msg5[] = {11, 0, 0, 0,1,7,16,16,0,0,0,0,1,0,0,1,0,1,0,1,0};
+		const unsigned char msg6[] = {11, 01, 2, 255,255,255,255,255,255,0};
+		const unsigned char msg7[] = {11, 255, 0, 255,0,255,0,255};
+		const cobs_buf_t messages[] = {	
+			{
+				.buf = (unsigned char * )&msg1,
+				.size = sizeof(msg1),
+				.length = sizeof(msg1),
+				.encoded_state = COBS_DECODED
+			},
+			{
+				.buf = (unsigned char * )&msg2,
+				.size = sizeof(msg2),
+				.length = sizeof(msg2),
+				.encoded_state = COBS_DECODED
+			},
+			{
+				.buf = (unsigned char * )&msg3,
+				.size = sizeof(msg3),
+				.length = sizeof(msg3),
+				.encoded_state = COBS_DECODED
+			},
+			{
+				.buf = (unsigned char * )&msg4,
+				.size = sizeof(msg4),
+				.length = sizeof(msg4),
+				.encoded_state = COBS_DECODED
+			},
+			{
+				.buf = (unsigned char * )&msg5,
+				.size = sizeof(msg5),
+				.length = sizeof(msg5),
+				.encoded_state = COBS_DECODED
+			},
+			{
+				.buf = (unsigned char * )&msg6,
+				.size = sizeof(msg6),
+				.length = sizeof(msg6),
+				.encoded_state = COBS_DECODED
+			},
+			{
+				.buf = (unsigned char * )&msg7,
+				.size = sizeof(msg7),
+				.length = sizeof(msg7),
+				.encoded_state = COBS_DECODED
+			}
+		};
+		/*End new test message cases*/
+
+		//set up the encode and decode buffers
+		unsigned char encode_buf[64] = {};
+		cobs_buf_t encode = {
+			.buf = encode_buf,
+			.size = sizeof(encode_buf),
+			.length = 0
+		};
+		cobs_buf_t decode_buf[64] = {};
+		cobs_buf_t decode = {
+			.buf = decode_buf,
+			.size = sizeof(decode_buf),
+			.length = 0
+		};
+		const int num_messages = sizeof(messages)/sizeof(cobs_buf_t);
+		for(int msgidx = 0; msgidx < num_messages; msgidx++)
+		{
+			for(int i = 0; i < messages[msgidx].length; i++)
+			{
+				encode.buf[i] = messages[msgidx].buf[i];
+			}
+			encode.length = messages[msgidx].length;
+			int rc = cobs_encode_single_buffer(&encode);	//we assume correctness of this function for the purpose of this test, i.e. coverage from previous tests is sufficient for us to test decode against it
+			rc = cobs_decode_double_buffer(&encode, &decode);
+			TEST_ASSERT_EQUAL(messages[msgidx].length, decode.length);
+			for(int i = 0; i < messages[msgidx].length; i++)
+			{
+				TEST_ASSERT_EQUAL(messages[msgidx].buf[i], decode.buf[i]);
+			}
+			printf("original: ");
+			printf_cobs_buf(&messages[msgidx]);
+			printf("encoded: ");
+			printf_cobs_buf(&encode);
+			printf("decoded: ");
+			printf_cobs_buf(&decode);
+		}
 	}
 }
