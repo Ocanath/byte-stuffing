@@ -6,10 +6,15 @@
 
 #define COBS_MIN_BUF_SIZE	3
 
+enum
+{
+	COBS_STREAMING_COMPLETE,	//delimiter found, parsing required. 
+	 COBS_STREAMING_PARSED,
+	  COBS_STREAMING_IN_PROGRESS
+};  //streaming state
 
-typedef enum {COBS_DECODED, COBS_ENCODED, COBS_STREAMING} cobs_state_t;
-
-enum {COBS_SUCCESS = 0, COBS_ERROR_NULL_POINTER = -1, COBS_ERROR_SIZE = -2, COBS_ERROR_POINTER_OVERFLOW = -4, COBS_ERROR_SERIAL_OVERRUN = -5, COBS_STREAMING_IN_PROGRESS = COBS_STREAMING};
+enum {COBS_DECODED, COBS_ENCODED};  //encoding state
+enum {COBS_SUCCESS = 0, COBS_ERROR_NULL_POINTER = -1, COBS_ERROR_SIZE = -2, COBS_ERROR_POINTER_OVERFLOW = -4, COBS_ERROR_SERIAL_OVERRUN = -5, COBS_ERROR_STREAMING_FRAME_DROPPED = -6};
 
 
 typedef struct cobs_buf_t
@@ -17,7 +22,8 @@ typedef struct cobs_buf_t
     unsigned char * buf;
     size_t size;
     int length;
-    cobs_state_t state;
+    uint8_t encoded_state;
+    uint8_t streaming_state;
 } cobs_buf_t;
 
 //Function template for basic cobs decoding. Takes an ENCODED buffer and decodes it into a DECODED buffer.

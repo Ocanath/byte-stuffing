@@ -1,6 +1,13 @@
 {
     "files.associations": {
         "ppp.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "compare": "cpp",
+        "cstddef": "cpp",
+        "limits": "cpp",
+        "type_traits": "cpp",
+        "vector": "cpp",
+        "xmemory": "cpp",
+        "xutility": "cpp"
     }
 }

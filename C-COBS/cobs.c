@@ -48,29 +48,52 @@ int cobs_encode(cobs_buf_t * msg)
 		}
 	}
 
-	msg->state = COBS_ENCODED;
+	msg->encoded_state = COBS_ENCODED;
 	return COBS_SUCCESS;
 }
 
+
+/*
+This function is designed to handle an incoming serial stream of bytes.
+
+This variant does not use a double buffer, which means that we need explicit state management
+in order to determine when to parse the buffer.
+
+That state management is handled with the streaming_state variable.
+
+If streaming is complete, that means that the buffer needs to be parsed. The parser should always set the state flag to COBS_STREAMING_PARSED
+
+ */
 int cobs_stream(unsigned char new_byte, cobs_buf_t *msg)
 {
 	if(msg == NULL)
 	{
 		return COBS_ERROR_NULL_POINTER;
 	}
+
+	if(msg->streaming_state == COBS_STREAMING_COMPLETE)	//filter incoming bytes which are received if the last message has not been parsed.
+	{
+		return COBS_ERROR_STREAMING_FRAME_DROPPED;	//this is an error - it means that we failed to parse the last message in time to handle the new one, and we dropped a byte. 
+	}
+	
 	if(msg->length + 1 > msg->size)
 	{
 		return COBS_ERROR_SERIAL_OVERRUN;
 	}
+	
+	//handle stream pointer/index
+	if(msg->streaming_state == COBS_STREAMING_PARSED)
+	{
+		msg->length = 0;	//restart the buffer if it's been handled externally
+		msg->streaming_state = COBS_STREAMING_IN_PROGRESS;
+	}
+	//buffer in the new byte
 	msg->buf[msg->length++] = new_byte;
 	if(new_byte == 0)
 	{
-		msg->state = COBS_ENCODED;
+		msg->encoded_state = COBS_ENCODED;
+		msg->streaming_state = COBS_STREAMING_COMPLETE;
 		return COBS_SUCCESS;
-	}
-	else
-	{
-		msg->state = COBS_STREAMING;
 	}
 	return COBS_STREAMING_IN_PROGRESS;
 }
