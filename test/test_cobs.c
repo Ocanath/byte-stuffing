@@ -349,7 +349,7 @@ void test_cobs_decode_double_buffer(void)
 				.size = sizeof(msg7),
 				.length = sizeof(msg7),
 				.encoded_state = COBS_DECODED
-			}
+			},
 		};
 		/*End new test message cases*/
 
@@ -389,4 +389,47 @@ void test_cobs_decode_double_buffer(void)
 			printf_cobs_buf(&decode);
 		}
 	}
+}
+
+
+void test_cobs_decode_double_buffer_large_message(void)
+{
+	unsigned char msg8[1024] = {};
+	for(int i = 0; i < sizeof(msg8); i++)
+	{
+		msg8[i] = (i % 255) + 1;	//fill the whole thing with nonzero bytes
+	}
+	for(int i = 0; i < sizeof(msg8); i++)
+	{
+		TEST_ASSERT_NOT_EQUAL(0, msg8[i]);
+	}
+
+	//set up the encode and decode buffers
+	unsigned char encode_buf[512] = {};
+	cobs_buf_t encode = {
+		.buf = encode_buf,
+		.size = sizeof(encode_buf),
+		.length = 0
+	};
+	cobs_buf_t decode_buf[512] = {};
+	cobs_buf_t decode = {
+		.buf = decode_buf,
+		.size = sizeof(decode_buf),
+		.length = 0
+	};
+
+	//encode the message
+	for(int i = 0; i < sizeof(msg8); i++)
+	{
+		encode.buf[i] = msg8[i];
+	}
+	encode.length = sizeof(msg8);
+	//encode might be wrong for large buffers
+	int rc = cobs_encode_single_buffer(&encode);	//we assume correctness of this function for the purpose of this test, i.e. coverage from previous tests is sufficient for us to test decode against it
+	rc = cobs_decode_double_buffer(&encode, &decode);
+	for(int i = 0; i < sizeof(msg8); i++)
+	{
+		TEST_ASSERT_EQUAL(msg8[i], decode.buf[i]);
+	}
+	TEST_ASSERT_EQUAL(sizeof(msg8), decode.length);
 }
