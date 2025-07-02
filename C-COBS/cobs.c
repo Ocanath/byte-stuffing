@@ -74,20 +74,21 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 	int pointer_idx = encoded_msg->buf[0];
 	for(int i = 1; i < encoded_msg->length; i++)
 	{
-		if(encoded_msg->buf[i] != 0)	//Stop at the delimiter.
+		if(encoded_msg->buf[i] == 0)	//Stop at the delimiter.
 		{
-			if(i == pointer_idx)
-			{
-				decoded_msg->buf[i-1] = 0;
-				pointer_idx = encoded_msg->buf[i] + i;
-				decoded_msg->length = i;
-			}
-			else
-			{
-				decoded_msg->buf[i-1] = encoded_msg->buf[i];
-				decoded_msg->length = i;	//update length as we copy
-			}			
+			break;
 		}
+		if(i == pointer_idx)
+		{
+			decoded_msg->buf[i-1] = 0;
+			pointer_idx = encoded_msg->buf[i] + i;
+			decoded_msg->length = i;
+		}
+		else
+		{
+			decoded_msg->buf[i-1] = encoded_msg->buf[i];
+			decoded_msg->length = i;	//update length as we copy
+		}			
 	}
 	
 	decoded_msg->encoded_state = COBS_DECODED;
