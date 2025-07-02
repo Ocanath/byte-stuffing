@@ -240,3 +240,49 @@ void test_cobs_encode(void)
 		printf("%d\r\n",rc);
 	}
 }
+
+void test_cobs_decode_double_buffer(void)
+{
+	{
+        int bidx = 0;
+		unsigned char encode_buf[4+2] = {};
+		encode_buf[bidx++] = 11;
+		encode_buf[bidx++] = 22;
+        encode_buf[bidx++] = 00;
+        encode_buf[bidx++] = 33;
+		cobs_buf_t encode = 
+		{
+			.buf = encode_buf,
+			.size = sizeof(encode_buf),
+			.length = bidx,
+			.encoded_state = COBS_DECODED
+		};
+		int rc = cobs_encode_single_buffer(&encode);
+		TEST_ASSERT_EQUAL(0, rc);
+		TEST_ASSERT_EQUAL(3, encode.buf[0]);
+		TEST_ASSERT_EQUAL(11, encode.buf[1]);
+		TEST_ASSERT_EQUAL(22, encode.buf[2]);
+		TEST_ASSERT_EQUAL(02, encode.buf[3]);
+        TEST_ASSERT_EQUAL(33, encode.buf[4]);
+        TEST_ASSERT_EQUAL(0, encode.buf[5]);
+		TEST_ASSERT_EQUAL(6, encode.length);
+		TEST_ASSERT_EQUAL(COBS_ENCODED, encode.encoded_state);
+
+		unsigned char decode_buf[sizeof(encode_buf)];
+		cobs_buf_t decode = 
+		{
+			.buf = decode_buf,
+			.size = sizeof(decode_buf),
+			.length = 0,
+			.encoded_state = COBS_DECODED	//not yet decoded but it should read perma decode regardless. length marks it as empty
+		};
+		rc = cobs_decode_double_buffer(&encode, &decode);
+		TEST_ASSERT_EQUAL(0,rc);
+		TEST_ASSERT_EQUAL(11, decode.buf[0]);
+		TEST_ASSERT_EQUAL(22, decode.buf[1]);
+		TEST_ASSERT_EQUAL(00, decode.buf[2]);
+		TEST_ASSERT_EQUAL(33, decode.buf[3]);
+		TEST_ASSERT_EQUAL(4, decode.length);
+		TEST_ASSERT_EQUAL(COBS_DECODED, decode.encoded_state);
+	}
+}

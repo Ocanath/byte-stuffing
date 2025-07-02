@@ -52,6 +52,47 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 	return COBS_SUCCESS;
 }
 
+int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
+{
+	//null pointer checks
+	if(encoded_msg == NULL || decoded_msg == NULL)
+	{
+		return COBS_ERROR_NULL_POINTER;
+	}
+	//zero length checks
+	if(encoded_msg->length == 0)
+	{
+		return COBS_ERROR_SIZE;
+	}
+	//quick check to ensure the decode buffer is large enough
+	if(decoded_msg->size < encoded_msg->length)
+	{
+		return COBS_ERROR_SIZE;	
+	}
+
+
+	int pointer_idx = encoded_msg->buf[0];
+	for(int i = 1; i < encoded_msg->length; i++)
+	{
+		if(encoded_msg->buf[i] != 0)	//Stop at the delimiter.
+		{
+			if(i == pointer_idx)
+			{
+				decoded_msg->buf[i-1] = 0;
+				pointer_idx = encoded_msg->buf[i] + i;
+				decoded_msg->length = i;
+			}
+			else
+			{
+				decoded_msg->buf[i-1] = encoded_msg->buf[i];
+				decoded_msg->length = i;	//update length as we copy
+			}			
+		}
+	}
+	
+	decoded_msg->encoded_state = COBS_DECODED;
+	return COBS_SUCCESS;	
+}
 
 /*
 This function is designed to handle an incoming serial stream of bytes.
