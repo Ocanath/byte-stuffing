@@ -1,6 +1,4 @@
 #include "cobs.h"
-/*Note: this implementation assumes that the maximum payload size is always under 253, 
-and that manual packetization will be implemented for buffers above this size. */
 
 
 int cobs_encode_single_buffer(cobs_buf_t * msg)
@@ -76,6 +74,7 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 	{
 		if(encoded_msg->buf[i] == 0)	//Stop at the delimiter.
 		{
+			//bug - length handler?
 			break;
 		}
 		if(i == pointer_idx)

@@ -405,13 +405,13 @@ void test_cobs_decode_double_buffer_large_message(void)
 	}
 
 	//set up the encode and decode buffers
-	unsigned char encode_buf[512] = {};
+	unsigned char encode_buf[2048] = {};
 	cobs_buf_t encode = {
 		.buf = encode_buf,
 		.size = sizeof(encode_buf),
 		.length = 0
 	};
-	cobs_buf_t decode_buf[512] = {};
+	cobs_buf_t decode_buf[2048] = {};
 	cobs_buf_t decode = {
 		.buf = decode_buf,
 		.size = sizeof(decode_buf),
@@ -426,9 +426,14 @@ void test_cobs_decode_double_buffer_large_message(void)
 	encode.length = sizeof(msg8);
 	//encode might be wrong for large buffers
 	int rc = cobs_encode_single_buffer(&encode);	//we assume correctness of this function for the purpose of this test, i.e. coverage from previous tests is sufficient for us to test decode against it
+	TEST_ASSERT_EQUAL(0, rc);
 	rc = cobs_decode_double_buffer(&encode, &decode);
 	for(int i = 0; i < sizeof(msg8); i++)
 	{
+		if(msg8[i] != decode.buf[i])
+		{
+			printf("bad idx is %d\r\n", i);
+		}
 		TEST_ASSERT_EQUAL(msg8[i], decode.buf[i]);
 	}
 	TEST_ASSERT_EQUAL(sizeof(msg8), decode.length);
