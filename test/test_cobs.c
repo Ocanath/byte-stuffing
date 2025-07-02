@@ -15,7 +15,7 @@ void tearDown(void)
 
 void test_cobs_encode_null_pointer(void)
 {
-    int rc = cobs_encode(NULL);
+    int rc = cobs_encode_single_buffer(NULL);
     TEST_ASSERT_EQUAL(rc, -1);
 }
 
@@ -29,7 +29,7 @@ void test_cobs_encode_small_buffer(void)
 		.length = 1,
 		.encoded_state = COBS_DECODED
 	};
-	int rc = cobs_encode(&msg);
+	int rc = cobs_encode_single_buffer(&msg);
 	TEST_ASSERT_EQUAL(COBS_ERROR_SIZE, rc);	//should return -1 due to the buffer being too small. 
 }
 
@@ -44,7 +44,7 @@ void test_cobs_encode(void)
 			.length = 1,
 			.encoded_state = COBS_DECODED
 		};
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(1, msg.buf[0]);
 		TEST_ASSERT_EQUAL(1, msg.buf[1]);
@@ -63,7 +63,7 @@ void test_cobs_encode(void)
 			.length = 2,
 			.encoded_state = COBS_DECODED
 		};
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(1, msg.buf[0]);
 		TEST_ASSERT_EQUAL(1, msg.buf[1]);
@@ -86,7 +86,7 @@ void test_cobs_encode(void)
 			.length = sizeof(msg_buf)-2,
 			.encoded_state = COBS_DECODED
 		};
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(1, msg.buf[0]);
 		TEST_ASSERT_EQUAL(2, msg.buf[1]);
@@ -110,7 +110,7 @@ void test_cobs_encode(void)
 			.length = bidx,
 			.encoded_state = COBS_DECODED
 		};
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(3, msg.buf[0]);
 		TEST_ASSERT_EQUAL(11, msg.buf[1]);
@@ -135,7 +135,7 @@ void test_cobs_encode(void)
 			.length = bidx,
 			.encoded_state = COBS_DECODED
 		};
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(5, msg.buf[0]);
 		TEST_ASSERT_EQUAL(11, msg.buf[1]);
@@ -163,7 +163,7 @@ void test_cobs_encode(void)
 			.length = sizeof(msg_buf) - 2, //last two bytes are zero for delimiter and to make room for prepended pointer
 			.encoded_state = COBS_DECODED
 		};
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(2, msg.buf[0]);
 		TEST_ASSERT_EQUAL(11, msg.buf[1]);
@@ -187,7 +187,7 @@ void test_cobs_encode(void)
 			.encoded_state = COBS_DECODED
 		};
 		TEST_ASSERT_EQUAL(0xFE, msg.buf[msg.length-1]);
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(256, msg.length);
 		TEST_ASSERT_EQUAL(0xFF, msg.buf[0]);
@@ -213,7 +213,7 @@ void test_cobs_encode(void)
 			.encoded_state = COBS_DECODED
 		};
 		TEST_ASSERT_EQUAL(0xFE, msg.buf[msg.length-1]);
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
 		TEST_ASSERT_EQUAL(257, msg.length);
 		TEST_ASSERT_EQUAL(0x1, msg.buf[0]);
@@ -236,7 +236,7 @@ void test_cobs_encode(void)
 			.length = sizeof(large_msg_buf)-2,
 			.encoded_state = COBS_DECODED
 		};
-		int rc = cobs_encode(&msg);
+		int rc = cobs_encode_single_buffer(&msg);
 		printf("%d\r\n",rc);
 	}
 }

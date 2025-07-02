@@ -3,7 +3,7 @@
 and that manual packetization will be implemented for buffers above this size. */
 
 
-int cobs_encode(cobs_buf_t * msg)
+int cobs_encode_single_buffer(cobs_buf_t * msg)
 {
 	//Encoding an encoded buffer should be allowed. This could be useful for forwarding to 'stupid' devices with constrained COBS handling (take in stream and forward unstuffed payload)
 	if(msg == NULL)
@@ -34,7 +34,7 @@ int cobs_encode(cobs_buf_t * msg)
 			int pointer_value = i - pointer_idx;
 			if(pointer_value > 0xFF)
 			{
-				return -1;	//pointer overflow. This could happen if a malformed packet is sent
+				return COBS_ERROR_POINTER_OVERFLOW;	//pointer overflow. This could happen if a malformed packet is sent
 			}
 			msg->buf[pointer_idx] = (unsigned char)pointer_value;	//we already shift by 1 when we start analyzing the shifted payload, so this load works
 			pointer_idx = i;	//the zero bytes are always replaced by pointers
@@ -64,36 +64,31 @@ That state management is handled with the streaming_state variable.
 If streaming is complete, that means that the buffer needs to be parsed. The parser should always set the state flag to COBS_STREAMING_PARSED
 
  */
-int cobs_stream(unsigned char new_byte, cobs_buf_t *msg)
+int cobs_stream(unsigned char new_byte, cobs_buf_t *encoded_msg, cobs_buf_t *decoded_msg)
 {
-	if(msg == NULL)
+	if(encoded_msg == NULL || decoded_msg == NULL)
 	{
 		return COBS_ERROR_NULL_POINTER;
 	}
-
-	if(msg->streaming_state == COBS_STREAMING_COMPLETE)	//filter incoming bytes which are received if the last message has not been parsed.
-	{
-		return COBS_ERROR_STREAMING_FRAME_DROPPED;	//this is an error - it means that we failed to parse the last message in time to handle the new one, and we dropped a byte. 
-	}
 	
-	if(msg->length + 1 > msg->size)
+	if(encoded_msg->length + 1 > encoded_msg->size)
 	{
 		return COBS_ERROR_SERIAL_OVERRUN;
 	}
 	
-	//handle stream pointer/index
-	if(msg->streaming_state == COBS_STREAMING_PARSED)
-	{
-		msg->length = 0;	//restart the buffer if it's been handled externally
-		msg->streaming_state = COBS_STREAMING_IN_PROGRESS;
-	}
-	//buffer in the new byte
-	msg->buf[msg->length++] = new_byte;
+	// Buffer in the new byte
+	encoded_msg->buf[encoded_msg->length++] = new_byte;
+	
 	if(new_byte == 0)
 	{
-		msg->encoded_state = COBS_ENCODED;
-		msg->streaming_state = COBS_STREAMING_COMPLETE;
-		return COBS_SUCCESS;
+		//decode the encoded message into the decoded message
+		//using cobs_decode_double_buffer
+		
+		// encoded_msg->encoded_state = COBS_ENCODED;
+		// int rc = cobs_decode_double_buffer(encoded_msg, decoded_msg);
+		// encoded_msg->length = 0;
+		// return rc;
 	}
+
 	return COBS_STREAMING_IN_PROGRESS;
 }
