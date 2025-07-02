@@ -306,7 +306,7 @@ void test_cobs_decode_double_buffer(void)
 		const unsigned char msg4[] = {11, 0, 0, 13,15,16};
 		const unsigned char msg5[] = {11, 0, 0, 0,1,7,16,16,0,0,0,0,1,0,0,1,0,1,0,1,0};
 		const unsigned char msg6[] = {11, 01, 2, 255,255,255,255,255,255,0};
-		const unsigned char msg7[] = {11, 255, 0, 255,0,255,0,255};
+		const unsigned char msg7[] = {11, 255, 0, 255, 0, 255, 0, 255};
 		const cobs_buf_t messages[] = {	
 			{
 				.buf = (unsigned char * )&msg1,
