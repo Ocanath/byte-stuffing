@@ -9,7 +9,7 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 		return COBS_ERROR_NULL_POINTER;	//null pointer check
 	}
 	//overrun check. we offset the buffer by one to prepend the pointer, and index into length+2 to append the delimiter, so this is critical for memory safety
-	if(msg->length == 0 || msg->length + 2 > msg->size || msg->size < COBS_MIN_BUF_SIZE)
+	if(msg->length == 0 || (msg->length + 2 + (int)(msg->length/254)) > msg->size || msg->size < COBS_MIN_BUF_SIZE)
 	{
 		return COBS_ERROR_SIZE;
 	}
@@ -40,7 +40,14 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 		}
 		else if(i - block_start >= 254)
 		{
-			msg->buf[pointer_idx] = 0xFF;
+			for(int j = msg->length-1; j >= i; j--)
+			{
+				msg->buf[j+1] = msg->buf[j];
+			}
+			msg->buf[msg->length++] = 0;
+			//msg->buf[i] = 0; //this will get overwritten the next time we have to load a pointer, including if we hit the delimiter
+			
+			msg->buf[pointer_idx] = 0;
 			pointer_idx = i;
 			block_start = i + 1;
 		}
@@ -77,11 +84,15 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 			//bug - length handler?
 			break;
 		}
-		if(i == pointer_idx)
+		if(i == pointer_idx && i != 255)
 		{
 			decoded_msg->buf[i-1] = 0;
 			pointer_idx = encoded_msg->buf[i] + i;
 			decoded_msg->length = i;
+		}
+		else if (i == pointer_idx && i == 255)
+		{
+			//do nothing. TODO: delete this if statement and put a comment indicating what we're doing, assuming it actually works
 		}
 		else
 		{
