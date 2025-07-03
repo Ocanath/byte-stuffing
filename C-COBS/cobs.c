@@ -87,7 +87,7 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 			break;
 		}
 
-		if(i != pointer_idx)
+		if(i != pointer_idx)	//This covers 99.9% of the execution of this function
 		{
 			decoded_msg->buf[decode_buffer_idx++] = encoded_msg->buf[i];
 		}
