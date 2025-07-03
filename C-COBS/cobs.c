@@ -139,10 +139,10 @@ int cobs_stream(unsigned char new_byte, cobs_buf_t *encoded_msg, cobs_buf_t *dec
 		//decode the encoded message into the decoded message
 		//using cobs_decode_double_buffer
 		
-		// encoded_msg->encoded_state = COBS_ENCODED;
-		// int rc = cobs_decode_double_buffer(encoded_msg, decoded_msg);
-		// encoded_msg->length = 0;
-		// return rc;
+		encoded_msg->encoded_state = COBS_ENCODED;
+		int rc = cobs_decode_double_buffer(encoded_msg, decoded_msg);
+		encoded_msg->length = 0;
+		return rc;
 	}
 
 	return COBS_STREAMING_IN_PROGRESS;

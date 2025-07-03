@@ -498,3 +498,125 @@ void test_cobs_decode_double_buffer_large_message(void)
 		// printf_cobs_buf(&decode);
 	}
 }
+
+void test_cobs_stream(void)
+{
+	/*Begin new test message cases. Add for more coverage */
+	const unsigned char msg1[] = {11, 0, 0, 0};
+	const unsigned char msg2[] = {11, 12, 13, 0};
+	const unsigned char msg3[] = {11, 0, 12, 13};
+	const unsigned char msg4[] = {11, 0, 0, 13,15,16};
+	const unsigned char msg5[] = {11, 0, 0, 0,1,7,16,16,0,0,0,0,1,0,0,1,0,1,0,1,0};
+	const unsigned char msg6[] = {11, 01, 2, 255,255,255,255,255,255,0};
+	const unsigned char msg7[] = {11, 255, 0, 255, 0, 255, 0, 255};
+	unsigned char msg8[1024] = {};	//
+	for(int i = 0; i < sizeof(msg8); i++)
+	{
+		msg8[i] = (i % 255) + 1;	//fill the whole thing with nonzero bytes
+	}
+	unsigned char msg9[256] = {};	//
+	for(int i = 0; i < sizeof(msg9); i++)
+	{
+		msg9[i] = (i%256)+1;
+	}
+	//these messages can't be encoded due to improper size. We will instead copy them into a fixed size encode buffer, which is more
+	//representitave because of explicit serialization
+	const cobs_buf_t messages[] = {	
+		{
+			.buf = (unsigned char * )&msg1,
+			.size = sizeof(msg1),
+			.length = sizeof(msg1),
+			.encoded_state = COBS_DECODED
+		},
+		{
+			.buf = (unsigned char * )&msg2,
+			.size = sizeof(msg2),
+			.length = sizeof(msg2),
+			.encoded_state = COBS_DECODED
+		},
+		{
+			.buf = (unsigned char * )&msg3,
+			.size = sizeof(msg3),
+			.length = sizeof(msg3),
+			.encoded_state = COBS_DECODED
+		},
+		{
+			.buf = (unsigned char * )&msg4,
+			.size = sizeof(msg4),
+			.length = sizeof(msg4),
+			.encoded_state = COBS_DECODED
+		},
+		{
+			.buf = (unsigned char * )&msg5,
+			.size = sizeof(msg5),
+			.length = sizeof(msg5),
+			.encoded_state = COBS_DECODED
+		},
+		{
+			.buf = (unsigned char * )&msg6,
+			.size = sizeof(msg6),
+			.length = sizeof(msg6),
+			.encoded_state = COBS_DECODED
+		},
+		{
+			.buf = (unsigned char * )&msg7,
+			.size = sizeof(msg7),
+			.length = sizeof(msg7),
+			.encoded_state = COBS_DECODED
+		},
+		{
+			.buf = (unsigned char *)&msg8,
+			.size = sizeof(msg8),
+			.length = sizeof(msg8),
+			.encoded_state = COBS_DECODED
+		}
+	};
+		//set up the encode and decode buffers
+	unsigned char tx_encode_buf[2048] = {};
+	cobs_buf_t tx_encode = {
+		.buf = tx_encode_buf,
+		.size = sizeof(tx_encode_buf),
+		.length = 0
+	};
+	unsigned char decode_buf[2048] = {};
+	cobs_buf_t decode = {
+		.buf = decode_buf,
+		.size = sizeof(decode_buf),
+		.length = 0
+	};
+	unsigned char rx_encode_buf[2048] = {};
+	cobs_buf_t rx_encode = {
+		.buf = rx_encode_buf,
+		.size = sizeof(rx_encode_buf),
+		.length = 0
+	};
+	const int num_messages = sizeof(messages)/sizeof(cobs_buf_t);
+	for(int msgidx = 0; msgidx < num_messages; msgidx++)
+	{
+		for(int i = 0; i < messages[msgidx].length; i++)
+		{
+			tx_encode.buf[i] = messages[msgidx].buf[i];
+		}
+		tx_encode.length = messages[msgidx].length;
+		int rc = cobs_encode_single_buffer(&tx_encode);	//we assume correctness of this function for the purpose of this test, i.e. coverage from previous tests is sufficient for us to test decode against it
+
+		for(int i = 0; i < tx_encode.length; i++)
+		{
+			int rc = cobs_stream(tx_encode.buf[i], &rx_encode, &decode);
+			if(rc == COBS_SUCCESS)
+			{
+				TEST_ASSERT_EQUAL(tx_encode.length-1, i);
+				TEST_ASSERT_EQUAL(messages[msgidx].length, decode.length);
+				for(int decode_bidx = 0; decode_bidx < decode.length; decode_bidx++)
+				{
+					TEST_ASSERT_EQUAL(messages[msgidx].buf[decode_bidx], decode.buf[decode_bidx]);
+				}
+			}
+			else
+			{
+				TEST_ASSERT_EQUAL(COBS_STREAMING_IN_PROGRESS, rc);
+			}
+		}
+	}
+
+}
