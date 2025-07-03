@@ -175,7 +175,7 @@ void test_cobs_encode(void)
 		TEST_ASSERT_EQUAL(COBS_ENCODED, msg.encoded_state);
 	}
 	{
-		unsigned char msg_buf[256] = {0};	
+		unsigned char msg_buf[257] = {0};	
 		for(int i = 0; i < 254; i++)		//test case: max length nonzero before needing to handle pointer overflow
 		{
 			msg_buf[i] = i+1;
@@ -197,47 +197,80 @@ void test_cobs_encode(void)
 		}
 		TEST_ASSERT_EQUAL(0, msg.buf[msg.length-1]);
 	}
-	{
-		unsigned char msg_buf[257] = {0};	
+	{ //test case number 9 on wikipedia, demonstrating proper handling of the maximum block size of 254
+		unsigned char msg_buf[258] = {0};	
 		/*similar to previous test, in that this is the max block size,
 		 just shifted in a message which has smaller blocks in the beginning.
 		  In this case a single block of size 1 (a zero byte)*/
 		for(int i = 0; i < 255; i++)		
 		{
-			msg_buf[i] = i;
+			msg_buf[i] = i+1;
 		}
-		cobs_buf_t msg = {
+		for(int i = 255; i < 258; i++)
+		{
+			msg_buf[i] = 0xDE;
+		}
+		cobs_buf_t msg = 
+		{
 			.buf = msg_buf,
 			.size = sizeof(msg_buf),
 			.length = 255,
 			.encoded_state = COBS_DECODED
 		};
-		TEST_ASSERT_EQUAL(0xFE, msg.buf[msg.length-1]);
+		
+		printf("Original unencoded: ");
+		for(int i = 0; i < 3; i++)
+		{
+			printf("%.2X ", msg.buf[i]);
+		}
+		printf(" ... ");
+		for(int i = msg.length-3; i < msg.length; i++)
+		{
+			printf("%.2X ", msg.buf[i]);
+		}
+		printf("\r\n");
+
 		int rc = cobs_encode_single_buffer(&msg);
 		TEST_ASSERT_EQUAL(0, rc);
-		TEST_ASSERT_EQUAL(257, msg.length);
-		TEST_ASSERT_EQUAL(0x1, msg.buf[0]);
-		TEST_ASSERT_EQUAL(0xFF, msg.buf[1]);
-		for(int i = 2; i < msg.length-1; i++)
+		TEST_ASSERT_EQUAL(258, msg.length);
+
+		printf("Encoded: ");
+		for(int i = 0; i < 4; i++)
 		{
-			TEST_ASSERT_EQUAL(i-1, msg.buf[i]);
+			printf("%.2X ", msg.buf[i]);
 		}
+		printf(" ... ");
+		for(int i = msg.length-5; i < msg.length; i++)
+		{
+			printf("%.2X ", msg.buf[i]);
+		}
+		printf("\r\n");
+
+
+		TEST_ASSERT_EQUAL(0xFF, msg.buf[0]);
+		for(int i = 1; i <= 0xFE; i++)
+		{
+			TEST_ASSERT_EQUAL(i, msg.buf[i]);
+		}
+		TEST_ASSERT_EQUAL(0x2, msg.buf[msg.length-3]);
+		TEST_ASSERT_EQUAL(0xFF, msg.buf[msg.length-2]);
 		TEST_ASSERT_EQUAL(0, msg.buf[msg.length-1]);
 	}
 	{//test overflow
 		unsigned char large_msg_buf[1024] = {};
-		for(int i = 0; i < sizeof(large_msg_buf)-2; i++)
+		for(int i = 0; i < sizeof(large_msg_buf)-6; i++)
 		{
-			large_msg_buf[i] = (i+1) % 512;
+			large_msg_buf[i] = (i % 512) + 1;
 		}
 		cobs_buf_t msg = {
 			.buf = large_msg_buf,
 			.size = sizeof(large_msg_buf),
-			.length = sizeof(large_msg_buf)-2,
+			.length = sizeof(large_msg_buf)-6,
 			.encoded_state = COBS_DECODED
 		};
 		int rc = cobs_encode_single_buffer(&msg);
-		printf("%d\r\n",rc);
+		TEST_ASSERT_EQUAL(0, rc);
+
 	}
 }
 
@@ -381,12 +414,12 @@ void test_cobs_decode_double_buffer(void)
 			{
 				TEST_ASSERT_EQUAL(messages[msgidx].buf[i], decode.buf[i]);
 			}
-			printf("original: ");
-			printf_cobs_buf(&messages[msgidx]);
-			printf("encoded: ");
-			printf_cobs_buf(&encode);
-			printf("decoded: ");
-			printf_cobs_buf(&decode);
+			// printf("original: ");
+			// printf_cobs_buf(&messages[msgidx]);
+			// printf("encoded: ");
+			// printf_cobs_buf(&encode);
+			// printf("decoded: ");
+			// printf_cobs_buf(&decode);
 		}
 	}
 }

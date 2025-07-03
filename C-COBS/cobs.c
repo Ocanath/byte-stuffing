@@ -32,22 +32,23 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 			int pointer_value = i - pointer_idx;
 			if(pointer_value > 0xFF)
 			{
-				return COBS_ERROR_POINTER_OVERFLOW;	//pointer overflow. This could happen if a malformed packet is sent
+				return COBS_ERROR_POINTER_OVERFLOW;	//pointer overflow. This should never happen!
 			}
 			msg->buf[pointer_idx] = (unsigned char)pointer_value;	//we already shift by 1 when we start analyzing the shifted payload, so this load works
 			pointer_idx = i;	//the zero bytes are always replaced by pointers
 			block_start = i + 1;
 		}
-		else if(i - block_start >= 254)
+		else if(i - block_start >= 254)	//this conditional may only catch the first full block - check multi consecutive full block encoing
 		{
+			//full block. Shift the buffer up by one, including the delimiter, and increase the length by one.
 			for(int j = msg->length-1; j >= i; j--)
 			{
 				msg->buf[j+1] = msg->buf[j];
 			}
 			msg->buf[msg->length++] = 0;
-			//msg->buf[i] = 0; //this will get overwritten the next time we have to load a pointer, including if we hit the delimiter
 			
-			msg->buf[pointer_idx] = 0;
+			//then load the pointer value and update the pointer index.
+			msg->buf[pointer_idx] = 0xFF;
 			pointer_idx = i;
 			block_start = i + 1;
 		}
@@ -77,6 +78,7 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 
 
 	int pointer_idx = encoded_msg->buf[0];
+	int decode_buffer_idx = 0;	//must maintain a decode buffer index because in the case of a full block, we need to skip instead of loading a zero.
 	for(int i = 1; i < encoded_msg->length; i++)
 	{
 		if(encoded_msg->buf[i] == 0)	//Stop at the delimiter.
@@ -86,21 +88,19 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 		}
 		if(i == pointer_idx && i != 255)
 		{
-			decoded_msg->buf[i-1] = 0;
+			decoded_msg->buf[decode_buffer_idx++] = 0;
 			pointer_idx = encoded_msg->buf[i] + i;
-			decoded_msg->length = i;
 		}
 		else if (i == pointer_idx && i == 255)
 		{
-			//do nothing. TODO: delete this if statement and put a comment indicating what we're doing, assuming it actually works
+			pointer_idx = encoded_msg->buf[i] + i;	//if you have a complete block you don't need to copy a zero, but you do need to update the pointer index
 		}
 		else
 		{
-			decoded_msg->buf[i-1] = encoded_msg->buf[i];
-			decoded_msg->length = i;	//update length as we copy
+			decoded_msg->buf[decode_buffer_idx++] = encoded_msg->buf[i];
 		}			
 	}
-	
+	decoded_msg->length = decode_buffer_idx;	//update length as we copy
 	decoded_msg->encoded_state = COBS_DECODED;
 	return COBS_SUCCESS;	
 }
