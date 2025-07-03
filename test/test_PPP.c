@@ -258,3 +258,8 @@ void test_PPP_stuff_with_esc_character(void)
     printf("\nSize: %d\n", stuffed_size);
 }
 
+
+void test_ppp_stream(void)
+{
+    
+}

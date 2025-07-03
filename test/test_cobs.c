@@ -593,6 +593,7 @@ void test_cobs_stream(void)
 	const int num_messages = sizeof(messages)/sizeof(cobs_buf_t);
 	for(int msgidx = 0; msgidx < num_messages; msgidx++)
 	{
+		//copy the parent (decoded) message into the encoding buffer and encode it
 		for(int i = 0; i < messages[msgidx].length; i++)
 		{
 			tx_encode.buf[i] = messages[msgidx].buf[i];
@@ -600,6 +601,7 @@ void test_cobs_stream(void)
 		tx_encode.length = messages[msgidx].length;
 		int rc = cobs_encode_single_buffer(&tx_encode);	//we assume correctness of this function for the purpose of this test, i.e. coverage from previous tests is sufficient for us to test decode against it
 
+		
 		for(int i = 0; i < tx_encode.length; i++)
 		{
 			int rc = cobs_stream(tx_encode.buf[i], &rx_encode, &decode);
