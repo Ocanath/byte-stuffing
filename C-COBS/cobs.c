@@ -86,21 +86,22 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 			//bug - length handler?
 			break;
 		}
-		if(i == pointer_idx && pointer_value != 255)
+
+		if(i != pointer_idx)
+		{
+			decoded_msg->buf[decode_buffer_idx++] = encoded_msg->buf[i];
+		}
+		else if(pointer_value != 255)	//if you're at the pointer and the value is not equal to 255, you need to decode a zero
 		{
 			decoded_msg->buf[decode_buffer_idx++] = 0;
 			pointer_value = encoded_msg->buf[i];
 			pointer_idx = pointer_value + i;
 		}
-		else if (i == pointer_idx && pointer_value == 255)
+		else	//if you're at the next pointer and the pointer value is equal to 255
 		{
 			pointer_value = encoded_msg->buf[i];
 			pointer_idx = pointer_value + i;	//if you have a complete block you don't need to copy a zero, but you do need to update the pointer index
 		}
-		else
-		{
-			decoded_msg->buf[decode_buffer_idx++] = encoded_msg->buf[i];
-		}			
 	}
 	decoded_msg->length = decode_buffer_idx;	//update length as we copy
 	decoded_msg->encoded_state = COBS_DECODED;
