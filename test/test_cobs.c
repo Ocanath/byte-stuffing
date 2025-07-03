@@ -427,6 +427,7 @@ void test_cobs_decode_double_buffer(void)
 
 void test_cobs_decode_double_buffer_large_message(void)
 {
+	
 	unsigned char msg8[1024] = {};
 	for(int i = 0; i < sizeof(msg8); i++)
 	{
@@ -436,6 +437,29 @@ void test_cobs_decode_double_buffer_large_message(void)
 	{
 		TEST_ASSERT_NOT_EQUAL(0, msg8[i]);
 	}
+
+	unsigned char msg9[258] = {};
+	for(int i = 0; i < 256; i++)
+	{
+		msg9[i] = (i%256)+1;
+	}
+
+	const cobs_buf_t messages[] = 
+	{	
+		{	//single full block
+			.buf = (unsigned char * )&msg9,
+			.size = sizeof(msg9),
+			.length = sizeof(msg9),
+			.encoded_state = COBS_DECODED
+		},
+		{	//multiple full blocks
+			.buf = (unsigned char * )&msg8,
+			.size = sizeof(msg8),
+			.length = sizeof(msg8),
+			.encoded_state = COBS_DECODED
+		}
+	};
+	/*End new test message cases*/
 
 	//set up the encode and decode buffers
 	unsigned char encode_buf[2048] = {};
@@ -450,24 +474,27 @@ void test_cobs_decode_double_buffer_large_message(void)
 		.size = sizeof(decode_buf),
 		.length = 0
 	};
-
-	//encode the message
-	for(int i = 0; i < sizeof(msg8); i++)
+	const int num_messages = sizeof(messages)/sizeof(cobs_buf_t);
+	for(int msgidx = 0; msgidx < num_messages; msgidx++)
 	{
-		encode.buf[i] = msg8[i];
-	}
-	encode.length = sizeof(msg8);
-	//encode might be wrong for large buffers
-	int rc = cobs_encode_single_buffer(&encode);	//we assume correctness of this function for the purpose of this test, i.e. coverage from previous tests is sufficient for us to test decode against it
-	TEST_ASSERT_EQUAL(0, rc);
-	rc = cobs_decode_double_buffer(&encode, &decode);
-	for(int i = 0; i < sizeof(msg8); i++)
-	{
-		if(msg8[i] != decode.buf[i])
+		for(int i = 0; i < messages[msgidx].length; i++)
 		{
-			printf("bad idx is %d\r\n", i);
+			encode.buf[i] = messages[msgidx].buf[i];
 		}
-		TEST_ASSERT_EQUAL(msg8[i], decode.buf[i]);
+		encode.length = messages[msgidx].length;
+		int rc = cobs_encode_single_buffer(&encode);	//we assume correctness of this function for the purpose of this test, i.e. coverage from previous tests is sufficient for us to test decode against it
+		TEST_ASSERT_EQUAL(0, rc);
+		rc = cobs_decode_double_buffer(&encode, &decode);
+		for(int i = 0; i < messages[msgidx].length; i++)
+		{
+			TEST_ASSERT_EQUAL(messages[msgidx].buf[i], decode.buf[i]);
+		}
+		TEST_ASSERT_EQUAL(messages[msgidx].length, decode.length);
+		// printf("original: ");
+		// printf_cobs_buf(&messages[msgidx]);
+		// printf("encoded: ");
+		// printf_cobs_buf(&encode);
+		// printf("decoded: ");
+		// printf_cobs_buf(&decode);
 	}
-	TEST_ASSERT_EQUAL(sizeof(msg8), decode.length);
 }

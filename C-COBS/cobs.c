@@ -20,7 +20,7 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 	{
 		msg->buf[i+1] = msg->buf[i];
 	}
-	msg->length += 1;	//increase the length by one before loading the pointers 
+	msg->length += 1;	//prepend the first pointer byte
 	msg->buf[msg->length++] = 0;	//append delimiter byte
 
 	int pointer_idx = 0;
@@ -76,8 +76,8 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 		return COBS_ERROR_SIZE;	
 	}
 
-
-	int pointer_idx = encoded_msg->buf[0];
+	int pointer_value = encoded_msg->buf[0];
+	int pointer_idx = pointer_value;	//the buffer index of the pointer. this is offset by 'i', which is zero when we start.
 	int decode_buffer_idx = 0;	//must maintain a decode buffer index because in the case of a full block, we need to skip instead of loading a zero.
 	for(int i = 1; i < encoded_msg->length; i++)
 	{
@@ -86,14 +86,16 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 			//bug - length handler?
 			break;
 		}
-		if(i == pointer_idx && i != 255)
+		if(i == pointer_idx && pointer_value != 255)
 		{
 			decoded_msg->buf[decode_buffer_idx++] = 0;
-			pointer_idx = encoded_msg->buf[i] + i;
+			pointer_value = encoded_msg->buf[i];
+			pointer_idx = pointer_value + i;
 		}
-		else if (i == pointer_idx && i == 255)
+		else if (i == pointer_idx && pointer_value == 255)
 		{
-			pointer_idx = encoded_msg->buf[i] + i;	//if you have a complete block you don't need to copy a zero, but you do need to update the pointer index
+			pointer_value = encoded_msg->buf[i];
+			pointer_idx = pointer_value + i;	//if you have a complete block you don't need to copy a zero, but you do need to update the pointer index
 		}
 		else
 		{
