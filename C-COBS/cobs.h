@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define COBS_MIN_BUF_SIZE	3
 
 enum {COBS_DECODED, COBS_ENCODED};  //encoding state
@@ -39,5 +43,9 @@ int cobs_decode_double_buffer(cobs_buf_t * encoded_msg, cobs_buf_t * decoded_msg
 int cobs_encode_single_buffer(cobs_buf_t * msg);
 //Function template to handle an incoming byte stream. Uses ZERO as the delimiter, and double-buffers the message to allow sufficient time for parsing.
 int cobs_stream(unsigned char new_byte, cobs_buf_t * encoded_msg, cobs_buf_t * decoded_msg);	//this almost works if the encoded and decoded messages are the same size - the only issue is the length gets reset to 0 after encoding. You could have this function return the decoded message size instead of success
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
