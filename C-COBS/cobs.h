@@ -33,7 +33,7 @@ typedef struct cobs_buf_t
 {
     unsigned char * buf;
     size_t size;
-    int length;
+    size_t length;
     uint8_t encoded_state;
 } cobs_buf_t;
 
