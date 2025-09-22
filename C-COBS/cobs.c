@@ -1,5 +1,32 @@
 #include "cobs.h"
 
+/*
+	Helper function to simply prepend a zero byte to the message.
+	Useful for robust handling - if you have corrupted traffic, the peripheral will
+	throw out the previous frame of length zero and continue
+*/
+int cobs_prepend_zero_single_buffer(cobs_buf_t * msg)
+{
+	//Encoding an encoded buffer should be allowed. This could be useful for forwarding to 'stupid' devices with constrained COBS handling (take in stream and forward unstuffed payload)
+	if(msg == NULL)
+	{
+		return COBS_ERROR_NULL_POINTER;	//null pointer check
+	}
+	//overrun check. we offset the buffer by one to prepend the pointer, and index into length+2 to append the delimiter, so this is critical for memory safety
+	if(msg->length == 0 || ((msg->length + 1) > msg->size))
+	{
+		return COBS_ERROR_SIZE;
+	}
+
+	//shift up by one: another O(n) op
+	for(int i = msg->length-1; i >= 0; i--)
+	{
+		msg->buf[i+1] = msg->buf[i];
+	}
+	msg->length  += 1;
+	msg->buf[0] = 0;	//prepend zero
+	return COBS_SUCCESS;
+}
 
 int cobs_encode_single_buffer(cobs_buf_t * msg)
 {

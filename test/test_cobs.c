@@ -499,6 +499,26 @@ void test_cobs_decode_double_buffer_large_message(void)
 	}
 }
 
+void test_cobs_prepend_zero(void)
+{
+	unsigned char msg_buf[12] = {1,2,3,4,5,6,0,1,2,5,0,1};
+	cobs_buf_t msg = {
+		.buf = msg_buf,
+		.size = sizeof(msg_buf),
+		.length = 3,
+		.encoded_state = COBS_DECODED
+	};
+	int rc = cobs_prepend_zero_single_buffer(&msg);
+	TEST_ASSERT_EQUAL(4, msg.length);
+	TEST_ASSERT_EQUAL(0, msg_buf[0]);
+	TEST_ASSERT_EQUAL(1, msg_buf[1]);
+	TEST_ASSERT_EQUAL(2, msg_buf[2]);	
+	TEST_ASSERT_EQUAL(3, msg_buf[3]);	//three should have shifted
+	TEST_ASSERT_EQUAL(5, msg_buf[4]);	//should have been untouched
+	TEST_ASSERT_EQUAL(0, rc);
+	
+}
+
 void test_cobs_stream(void)
 {
 	/*Begin new test message cases. Add for more coverage */

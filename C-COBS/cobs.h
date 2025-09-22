@@ -43,6 +43,8 @@ int cobs_decode_double_buffer(cobs_buf_t * encoded_msg, cobs_buf_t * decoded_msg
 int cobs_encode_single_buffer(cobs_buf_t * msg);
 //Function template to handle an incoming byte stream. Uses ZERO as the delimiter, and double-buffers the message to allow sufficient time for parsing.
 int cobs_stream(unsigned char new_byte, cobs_buf_t * encoded_msg, cobs_buf_t * decoded_msg);	//this almost works if the encoded and decoded messages are the same size - the only issue is the length gets reset to 0 after encoding. You could have this function return the decoded message size instead of success
+//Helper function to prepend a zero to a single buffer frame. Useful if you are expecting non cobs encoded traffic and want to make sure your message is properly delimited by a stream decoder
+int cobs_prepend_zero_single_buffer(cobs_buf_t * msg);
 
 #ifdef __cplusplus
 }
