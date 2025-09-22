@@ -9,9 +9,53 @@ This library contains C .h and .c files for byte stuffing. The library implement
 
 ## Usage
 
-Either copy the headers into your project directly and add to your build environment, or add this library as a submodule and link to the headers (recommended).
+### Option 1: Direct Integration
+Copy the headers into your project directly and add to your build environment.
 
-CMake support with FetchContent pending.
+### Option 2: Git Submodule
+Add this library as a submodule and link to the headers.
+
+### Option 3: CMake with FetchContent (Recommended)
+
+Add this to your `CMakeLists.txt`:
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+    byte_stuffing
+    GIT_REPOSITORY https://github.com/Ocanath/byte-stuffing.git
+    GIT_TAG        master  # or specific commit/tag
+)
+
+FetchContent_MakeAvailable(byte_stuffing)
+
+# Link the libraries to your target
+target_link_libraries(your_target_name PRIVATE cobs PPP)
+```
+
+### Manual Build
+
+To build the libraries manually:
+
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
+
+This will generate:
+- `libcobs.a` - COBS (Consistent Overhead Byte Stuffing) library
+- `libPPP.a` - PPP/HDLC (High-Level Data Link Control) library
+
+### C++ Integration
+
+Both libraries are C++ compatible. Include the headers in your C++ code:
+
+```cpp
+#include "cobs.h"    // COBS functionality
+#include "PPP.h"     // PPP/HDLC functionality
+```
 
 ## Unit Tests
 
