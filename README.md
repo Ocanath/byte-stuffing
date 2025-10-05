@@ -59,4 +59,13 @@ Both libraries are C++ compatible. Include the headers in your C++ code:
 
 ## Unit Tests
 
-To run the unit tests, install ceedling and simply run: `ceedling test:all`
+### C Tests
+To run the C unit tests, install ceedling and simply run: `ceedling test:all`
+
+### Python Tests
+A Python implementation of COBS is available in `cobs.py`. To run the Python tests:
+
+```bash
+pip install pytest
+pytest test_cobs.py -v
+```
