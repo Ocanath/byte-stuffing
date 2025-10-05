@@ -8,6 +8,8 @@
         "type_traits": "cpp",
         "vector": "cpp",
         "xmemory": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "cobs.h": "c",
+        "assert.h": "c"
     }
 }

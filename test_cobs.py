@@ -26,9 +26,9 @@ class TestCOBSEncode:
         result = encode(bytes([0x00, 0x00]))
         assert result == bytes([0x01, 0x01, 0x01, 0x00])
 
-    def test_encode_zero_nonzero_zeros(self):
-        """Test encoding: [0x00 0x0B 0x00 0x00] -> [0x01 0x02 0x0B 0x01 0x00]"""
-        result = encode(bytes([0x00, 0x0B, 0x00, 0x00]))
+    def test_encode_zero_nonzero_zero(self):
+        """Test encoding: [0x00 0x0B 0x00] -> [0x01 0x02 0x0B 0x01 0x00]"""
+        result = encode(bytes([0x00, 0x0B, 0x00]))
         assert result == bytes([0x01, 0x02, 0x0B, 0x01, 0x00])
 
     def test_encode_with_zero_in_middle(self):
@@ -51,10 +51,11 @@ class TestCOBSEncode:
         data = bytes(range(1, 255))  # 1 to 254
         result = encode(data)
 
-        # Should be: 0xFF (full block marker) + 254 bytes + 0x00 (delimiter)
-        assert len(result) == 256
+        # Should be: 0xFF (full block marker) + 254 bytes + 0x01 (final pointer) + 0x00 (delimiter)
+        assert len(result) == 257
         assert result[0] == 0xFF  # Full block pointer
         assert result[1:255] == data
+        assert result[255] == 0x01  # Final pointer (no more data)
         assert result[-1] == 0x00  # Delimiter
 
     def test_encode_255_bytes_with_full_block(self):
@@ -71,7 +72,7 @@ class TestCOBSEncode:
 
     def test_encode_large_message(self):
         """Test encoding large message with multiple full blocks."""
-        data = bytes([(i % 512) + 1 for i in range(1018)])
+        data = bytes([((i % 255) + 1) & 0xFF for i in range(1018)])
         result = encode(data)
         # Should succeed without error
         assert result[-1] == 0x00  # Ends with delimiter
@@ -106,10 +107,10 @@ class TestCOBSDecode:
     def test_decode_large_messages(self):
         """Test decoding large messages with full blocks."""
         # Single full block
-        msg1 = bytes([(i % 256) + 1 for i in range(256)])
+        msg1 = bytes([((i % 255) + 1) & 0xFF for i in range(256)])
 
         # Multiple full blocks
-        msg2 = bytes([(i % 255) + 1 for i in range(1024)])
+        msg2 = bytes([((i % 255) + 1) & 0xFF for i in range(1024)])
 
         for original_msg in [msg1, msg2]:
             encoded = encode(original_msg)

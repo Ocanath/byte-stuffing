@@ -34,41 +34,33 @@ def encode(data: bytes) -> bytes:
     result.append(0)  # Placeholder for first pointer
 
     pointer_idx = 0
-    block_start = 1
-    i = 0
+    code_idx = 0
 
-    while i < len(data):
-        # Copy the byte
-        result.append(data[i])
-        current_idx = len(result) - 1
-
-        if data[i] == 0:
-            # Found a zero - set pointer and update
-            pointer_value = current_idx - pointer_idx
-            if pointer_value > 0xFF:
-                raise ValueError("Pointer overflow")
-            result[pointer_idx] = pointer_value
-            pointer_idx = current_idx
-            block_start = len(result)
-            i += 1
-
-        elif current_idx - block_start >= 254:
-            # Full block (254 bytes) - insert pointer
-            pointer_value = 0xFF
-            result[pointer_idx] = pointer_value
-            result.append(0)  # New pointer placeholder
+    for byte in data:
+        if byte == 0:
+            # Set the pointer to distance to this zero
+            result[pointer_idx] = code_idx + 1
+            # Add a new pointer placeholder where the zero was
+            result.append(0)
             pointer_idx = len(result) - 1
-            block_start = len(result)
-            i += 1
+            code_idx = 0
         else:
-            i += 1
+            # Copy non-zero byte
+            result.append(byte)
+            code_idx += 1
 
-    # Set final pointer and append delimiter
-    final_pointer = len(result) - pointer_idx
-    if final_pointer > 0xFF:
-        raise ValueError("Pointer overflow")
-    result[pointer_idx] = final_pointer
-    result.append(0)  # Delimiter
+            # Check if we've hit a full block (254 bytes)
+            if code_idx == 254:
+                result[pointer_idx] = 255
+                result.append(0)
+                pointer_idx = len(result) - 1
+                code_idx = 0
+
+    # Set final pointer
+    result[pointer_idx] = code_idx + 1
+
+    # Append delimiter
+    result.append(0)
 
     return bytes(result)
 
