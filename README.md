@@ -67,5 +67,5 @@ A Python implementation of COBS is available in `cobs.py`. To run the Python tes
 
 ```bash
 pip install pytest
-pytest test_cobs.py -v
+pytest Python\test_cobs.py -v
 ```
