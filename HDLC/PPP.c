@@ -73,29 +73,40 @@ int PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 int PPP_unstuff( ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 {
 	if(stuffed_buffer->buf[0] != FRAME_CHAR)
-		return 0;
+	{
+		unstuffed_buffer->length = 0;
+		return unstuffed_buffer->length;
+	}
 	int pld_idx = 0;	//payload/working buffer index, starts at 0
 	for(int i = 1; i < stuffed_buffer->length; i++)
 	{
 		 if(stuffed_buffer->buf[i] == ESC_CHAR)	//marks prepend of xored data. xor again to recover the original value
 		 {
-			 i++; //skip to the next value
-			 if(i >= stuffed_buffer->length || pld_idx >= unstuffed_buffer->size)	//memory overrun guards. do two because we could overrun the while loop guards here
-				 return 0;
+			i++; //skip to the next value
+			if(i >= stuffed_buffer->length || pld_idx >= unstuffed_buffer->size)	//memory overrun guards. do two because we could overrun the while loop guards here
+			{
+				unstuffed_buffer->length = 0;
+				return unstuffed_buffer->length;
+			}
 			 unstuffed_buffer->buf[pld_idx++] = stuffed_buffer->buf[i] ^ ESC_MASK;
 		 }
 		 else if(stuffed_buffer->buf[i] == FRAME_CHAR)	//end of buffer, return 
 		 {
-			 return pld_idx;	
+			unstuffed_buffer->length = pld_idx;
+			return unstuffed_buffer->length;	
 		 }
 		 else	//unaffected data, 'normal' case
 		 {
 			 if(pld_idx >= unstuffed_buffer->size)
-				 return 0;
+			 {
+				unstuffed_buffer->length = 0;
+				 return unstuffed_buffer->length;
+			 }
 			 unstuffed_buffer->buf[pld_idx++] = stuffed_buffer->buf[i];
 		 }
 	}
-	return 0; //we have overrun the stuffed buffer without finding a frame character, meaning the buffer is improperly formed. return 0 length because payload is also invalid
+	unstuffed_buffer->length = 0;
+	return unstuffed_buffer->length; //we have overrun the stuffed buffer without finding a frame character, meaning the buffer is improperly formed. return 0 length because payload is also invalid
 }
 
 /*
