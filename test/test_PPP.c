@@ -10,9 +10,9 @@
 static uint8_t stuffing_buffer[BUFFER_SIZE];
 static uint8_t unstuffing_buffer[BUFFER_SIZE];
 static uint8_t example_data[PAYLOAD_SIZE];
-static buffer_t stuffed_buffer;
-static buffer_t input_buffer;
-static buffer_t unstuffed_buffer;
+static ppp_buffer_t stuffed_buffer;
+static ppp_buffer_t input_buffer;
+static ppp_buffer_t unstuffed_buffer;
 
 void setUp(void)
 {
@@ -200,7 +200,7 @@ void test_PPP_stuff_buffer_overflow(void)
 {
     // Create a buffer that's too small
     uint8_t small_buffer[4];
-    buffer_t small_stuffed_buffer = {
+    ppp_buffer_t small_stuffed_buffer = {
         .buf = small_buffer,
         .size = 4,
         .length = 0

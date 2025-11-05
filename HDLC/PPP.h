@@ -12,16 +12,16 @@ extern "C" {
 #define ESC_CHAR 0x7D
 #define ESC_MASK 0x20
 
-typedef struct buffer_t
+typedef struct ppp_buffer_t
 {
     unsigned char * buf;
     size_t size;
     int length;
-} buffer_t;
+} ppp_buffer_t;
 
-int PPP_stuff(buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer);
-int PPP_unstuff( buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer);
-int parse_PPP_stream(uint8_t new_byte, buffer_t * unstuffed_buffer, buffer_t * input_buffer);
+int PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer);
+int PPP_unstuff( ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer);
+int parse_PPP_stream(uint8_t new_byte, ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * input_buffer);
 
 #ifdef __cplusplus
 }

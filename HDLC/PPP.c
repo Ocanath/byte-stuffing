@@ -16,7 +16,7 @@
 		returns: the length of the stuffed buffer, or 0 if the stuffed buffer is overrun
 		
 */
-int PPP_stuff(buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
+int PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 {
 	int bidx = 0;
 	stuffed_buffer->buf[bidx++] = FRAME_CHAR;
@@ -70,7 +70,7 @@ int PPP_stuff(buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
 	This function requires explicit unit testing. Once I add it i'll delte this comment.
 	TODO: what you have to do to clear this comment.
 */
-int PPP_unstuff( buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
+int PPP_unstuff( ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 {
 	if(stuffed_buffer->buf[0] != FRAME_CHAR)
 		return 0;
@@ -119,7 +119,7 @@ int PPP_unstuff( buffer_t * unstuffed_buffer, buffer_t * stuffed_buffer)
 *	payload_buffer: result of PPP unstuffing
 *	returns: size of the payload buffer. valid 
 */
-int parse_PPP_stream(uint8_t new_byte, buffer_t * unstuffed_buffer, buffer_t * input_buffer)
+int parse_PPP_stream(uint8_t new_byte, ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * input_buffer)
 {
 	if (input_buffer->length < input_buffer->size)
 	{
