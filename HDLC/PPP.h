@@ -16,7 +16,7 @@ typedef struct ppp_buffer_t
 {
     unsigned char * buf;
     size_t size;
-    int length;
+    size_t length;
 } ppp_buffer_t;
 
 int PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer);
