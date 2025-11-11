@@ -330,7 +330,14 @@ void test_dma_handler(void)
         .length = 0
     };
 
-    unsigned char message[] = "~hello~~fuck~~goodbye~";
+    unsigned char message[] = "~hello~~test~~goodbye~~~miss~~nomiss~";
+    unsigned char * unstuffed_messages_chk[] = {
+        "hello",
+        "test",
+        "goodbye",
+        "nomiss"
+    };
+    int check_message_index = 0;
     for(int i = 0; i < sizeof(message); i++)
     {
         unsigned char rdr = message[i];
@@ -346,8 +353,16 @@ void test_dma_handler(void)
             {
                 dma.CNDTR = sizeof(rxbuf);
                 int retlen = PPP_unstuff(&rx_unstuffed, &rx_alias);
-                printf("DMA Message Received: ");
-                print_message(&rx_unstuffed);
+                if(retlen != 0)
+                {
+                    printf("DMA Message Received: ");
+                    print_message(&rx_unstuffed);
+                    for(int chk = 0; chk < rx_unstuffed.length; chk++)
+                    {
+                        TEST_ASSERT_EQUAL(unstuffed_messages_chk[check_message_index][chk], rx_unstuffed.buf[chk]);
+                    }
+                    check_message_index++;
+                }
             }
         }
     }
