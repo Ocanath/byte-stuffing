@@ -5,7 +5,7 @@
             "name": "Debug test_cobs",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/test/out/test_cobs/test_cobs.out",
+            "program": "${workspaceRoot}/build/test/out/${fileBasenameNoExtension}/${fileBasenameNoExtension}.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

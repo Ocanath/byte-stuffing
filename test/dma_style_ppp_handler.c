@@ -4,14 +4,12 @@
 /*Virtualize hardware behavior*/
 void enqueue_byte(unsigned char byte, dma_registers_t * dma)
 {
-    if(dma->CNDTR == 0)
+    if(dma->CNDTR > 0)
     {
-        dma->p_current = dma->CMAR;
-        return;
+        unsigned char * pbyte = dma->CMAR + (dma->size - dma->CNDTR);
+        *pbyte = byte;
+        dma->CNDTR--;
     }
-    dma->CNDTR--;
-    *dma->p_current = byte;
-    dma->p_current++;
 }
 
 

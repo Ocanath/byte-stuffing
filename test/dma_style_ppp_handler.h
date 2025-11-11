@@ -4,7 +4,7 @@ typedef struct dma_registers_t
 {
     uint32_t CNDTR; //count-down register
     unsigned char * CMAR;   //
-    unsigned char * p_current; //
+    uint32_t size; //
 }dma_registers_t;
 
 

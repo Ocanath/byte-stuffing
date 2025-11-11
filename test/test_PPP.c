@@ -274,7 +274,7 @@ void test_dma_emulation(void)
     dma_registers_t dma = {
         .CNDTR = sizeof(rxbuf),
         .CMAR = rxbuf,
-        .p_current = rxbuf
+        .size = sizeof(rxbuf)
     };
 
     unsigned char message[] = "~hello~goodbye extr characters";
@@ -314,7 +314,7 @@ void test_dma_handler(void)
     dma_registers_t dma = {
         .CNDTR = sizeof(rxbuf),
         .CMAR = rxbuf,
-        .p_current = rxbuf
+        .size = sizeof(rxbuf)
     };
 
 
