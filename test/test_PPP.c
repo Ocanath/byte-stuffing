@@ -1,5 +1,6 @@
 #include "unity.h"
 #include "PPP.h"
+#include "dma_style_ppp_handler.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -262,4 +263,92 @@ void test_PPP_stuff_with_esc_character(void)
 void test_ppp_stream(void)
 {
     
+}
+
+
+
+
+void test_dma_emulation(void)
+{
+    unsigned char rxbuf[8] = {};
+    dma_registers_t dma = {
+        .CNDTR = sizeof(rxbuf),
+        .CMAR = rxbuf,
+        .p_current = rxbuf
+    };
+
+    unsigned char message[] = "~hello~goodbye extr characters";
+    for(int i = 0; i < sizeof(message); i++)
+    {
+        enqueue_byte(message[i], &dma);
+        if(i < sizeof(rxbuf))
+        {
+            TEST_ASSERT_EQUAL(message[i], rxbuf[i]);
+            TEST_ASSERT_EQUAL(sizeof(rxbuf) -  dma.CNDTR, i+1); //'length' of the current message
+        }
+        else
+        {
+            TEST_ASSERT_EQUAL(dma.CNDTR, 0);
+            for(int compare_idx = 0; compare_idx < sizeof(message); compare_idx++)
+            {
+                TEST_ASSERT_EQUAL(message[compare_idx], rxbuf[compare_idx]);
+            }
+        }
+    }
+}
+
+
+void print_message(ppp_buffer_t * buf)
+{
+    for(int i = 0; i < buf->length; i++)
+    {
+        printf("%c", buf->buf[i]);
+    }
+    printf("\n");
+}
+
+
+void test_dma_handler(void)
+{
+    unsigned char rxbuf[18] = {};
+    dma_registers_t dma = {
+        .CNDTR = sizeof(rxbuf),
+        .CMAR = rxbuf,
+        .p_current = rxbuf
+    };
+
+
+    ppp_buffer_t rx_alias = {
+        .buf = rxbuf,
+        .size = sizeof(rxbuf),
+        .length = 0
+    };
+    unsigned char unstuffed[8] = {};
+    ppp_buffer_t rx_unstuffed = {
+        .buf = unstuffed,
+        .size = sizeof(unstuffed),
+        .length = 0
+    };
+
+    unsigned char message[] = "~hello~~fuck~~goodbye~";
+    for(int i = 0; i < sizeof(message); i++)
+    {
+        unsigned char rdr = message[i];
+        enqueue_byte(rdr, &dma); //pre-interrupt handler
+
+
+        //'interrupt handler'
+        if(rdr == FRAME_CHAR)
+        {
+            // int length = sizeof(message) - dma.CNDTR;
+            rx_alias.length = (rx_alias.size - (size_t)dma.CNDTR);
+            if(rx_alias.length != 1)
+            {
+                dma.CNDTR = sizeof(rxbuf);
+                int retlen = PPP_unstuff(&rx_unstuffed, &rx_alias);
+                printf("DMA Message Received: ");
+                print_message(&rx_unstuffed);
+            }
+        }
+    }
 }
