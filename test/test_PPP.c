@@ -289,7 +289,7 @@ void test_dma_emulation(void)
         else
         {
             TEST_ASSERT_EQUAL(dma.CNDTR, 0);
-            for(int compare_idx = 0; compare_idx < sizeof(message); compare_idx++)
+            for(int compare_idx = 0; compare_idx < sizeof(rxbuf); compare_idx++)
             {
                 TEST_ASSERT_EQUAL(message[compare_idx], rxbuf[compare_idx]);
             }
