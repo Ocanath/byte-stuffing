@@ -98,7 +98,7 @@ int cobs_decode_double_buffer(cobs_buf_t* encoded_msg, cobs_buf_t* decoded_msg)
 		return COBS_ERROR_SIZE;
 	}
 	//quick check to ensure the decode buffer is large enough
-	if(decoded_msg->size < encoded_msg->length)
+	if(decoded_msg->size < encoded_msg->length - 1)	//upper bound on index into decode buffer is encode - 1, due to for loop logic. Subtract is safe from underflow becasue of guard on 96.
 	{
 		return COBS_ERROR_SIZE;	
 	}
