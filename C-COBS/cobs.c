@@ -153,7 +153,7 @@ int cobs_stream(unsigned char new_byte, cobs_buf_t *encoded_msg, cobs_buf_t *dec
 		return COBS_ERROR_NULL_POINTER;
 	}
 	
-	if(encoded_msg->length + 1 > encoded_msg->size)
+	if(encoded_msg->length >= encoded_msg->size)
 	{
 		encoded_msg->length = 0;	//reset the length to recover for the next frame
 		return COBS_ERROR_SERIAL_OVERRUN;
