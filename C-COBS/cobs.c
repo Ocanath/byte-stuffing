@@ -19,7 +19,7 @@ int cobs_prepend_zero_single_buffer(cobs_buf_t * msg)
 	}
 
 	//shift up by one: another O(n) op
-	for(int i = msg->length-1; i >= 0; i--)
+	for(int i = (int)(msg->length-1); i >= 0; i--)
 	{
 		msg->buf[i+1] = msg->buf[i];
 	}
@@ -43,7 +43,7 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 
 	//shift the entire buffer up by one index. 
 	//Note: this is unnecessary if cobs_buf_t tracks two pointers; one for 'encoded' and one for 'decoded' on the same run of memory, off by 1. 
-	for(int i = msg->length-1; i >= 0; i--)
+	for(int i = (int)(msg->length-1); i >= 0; i--)
 	{
 		msg->buf[i+1] = msg->buf[i];
 	}
@@ -52,7 +52,7 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 
 	int pointer_idx = 0;
 	int block_start = 1;//index of the first byte of the current block. Used primarily for pointer overflow handling
-	for(int i = 1; i < msg->length; i++)
+	for(int i = 1; i < (int)(msg->length); i++)
 	{
 		if(msg->buf[i] == 0)
 		{
@@ -68,7 +68,7 @@ int cobs_encode_single_buffer(cobs_buf_t * msg)
 		else if(i - block_start >= 254)	//this conditional may only catch the first full block - check multi consecutive full block encoing
 		{
 			//full block. Shift the buffer up by one, including the delimiter, and increase the length by one.
-			for(int j = msg->length-1; j >= i; j--)
+			for(int j = (int)(msg->length-1); j >= i; j--)
 			{
 				msg->buf[j+1] = msg->buf[j];
 			}

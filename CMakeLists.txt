@@ -34,5 +34,19 @@ set_target_properties(PPP PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
+# bytestream library
+add_library(bytestream STATIC
+    bytestream/bytestream.c
+)
+
+target_include_directories(bytestream PUBLIC
+    bytestream
+)
+
+set_target_properties(bytestream PROPERTIES
+    C_STANDARD 99
+    POSITION_INDEPENDENT_CODE ON
+)
+
 # Optional: Create an umbrella target to build both libraries
-add_custom_target(all_libs DEPENDS cobs PPP)
+add_custom_target(all_libs DEPENDS cobs PPP bytestream)
