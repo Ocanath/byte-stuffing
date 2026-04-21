@@ -102,9 +102,11 @@
   :source:
     - HDLC/**
     - C-COBS/**
+    - bytestream/**
   :include:
     - HDLC/** # In simple projects, this entry often duplicates :source
     - C-COBS/**
+    - bytestream/**
   :support:
     - test/support
   :libraries: []

@@ -19,7 +19,7 @@ enum {
 	STREAM_ERROR_EMPTYBUFFER = -3
 };
 
-int check_buf(bytestream_buf_t * buf);
-
+int bytestream(unsigned char new_byte, bytestream_buf_t * input, unsigned char delimiter);					//for cobs decode
+int bytestream_dual_delimiter(unsigned char new_byte, bytestream_buf_t * input, unsigned char delimiter);	//for ppp unstuff
 
 #endif
