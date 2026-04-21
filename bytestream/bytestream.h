@@ -16,7 +16,8 @@ enum {
 	BYTESTREAM_IN_PROGRESS = 1,
 	BYTESTREAM_ERROR_NULLPTR = -1,
 	BYTESTREAM_ERROR_OVERRUN = -2,
-	BYTESTREAM_ERROR_EMPTYBUFFER = -3
+	BYTESTREAM_ERROR_EMPTYBUFFER = -3,
+	BYTESTREAM_ERROR_DUALDELIMITER_MISSING_START = -4
 };
 
 int bytestream(unsigned char new_byte, bytestream_buf_t * input, unsigned char delimiter);					//for cobs decode

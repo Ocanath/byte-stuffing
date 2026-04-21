@@ -74,10 +74,15 @@ int bytestream_dual_delimiter(unsigned char new_byte, bytestream_buf_t * input, 
 
 	if(new_byte == delimiter)
 	{
+		int rc = BYTESTREAM_SUCCESS;
+		if(input->buf[0] != delimiter)
+		{
+			rc = BYTESTREAM_ERROR_DUALDELIMITER_MISSING_START;
+		}
 		input->len = input->pos;
 		input->pos = 0;
 		input->buf[input->pos++] = new_byte;
-		return BYTESTREAM_SUCCESS;	//mark "input" as valid for decode
+		return rc;	//mark "input" as valid for decode
 	}
 	return BYTESTREAM_IN_PROGRESS;
 }
