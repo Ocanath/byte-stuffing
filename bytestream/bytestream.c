@@ -3,7 +3,7 @@
 /*
 Basic check function
 */
-int check_buf(bytestream_buf_t * buf)
+static int check_buf(bytestream_buf_t * buf)
 {
 	if(buf == NULL)
 	{
