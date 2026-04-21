@@ -154,6 +154,47 @@ void test_PPP_unstuff_basic(void)
     printf("\nSize: %d\n", unstuffed_size);
 }
 
+
+void test_PPP_stream_parsing_strays(void)
+{
+	unsigned char example_data[128] = {0};
+	size_t len = 0;
+	example_data[len++] = 0;
+	example_data[len++] = '~';
+	example_data[len++] = 1;
+	example_data[len++] = 2;
+	example_data[len++] = 3;
+	example_data[len++] = 4;
+	example_data[len++] = 5;
+	example_data[len++] = '~';
+
+
+	unsigned char stuff_mem[32] = {0};
+	ppp_buffer_t stuffed = {stuff_mem, sizeof(stuff_mem), 0};
+
+	unsigned char unstuff_mem[sizeof(stuff_mem)*2+2] = {0};
+	ppp_buffer_t unstuffed = {unstuff_mem, sizeof(unstuff_mem), 0};
+
+	int frame_size = 0;
+	for(size_t i = 0; i < sizeof(example_data); i++)
+	{
+		uint8_t newbyte = (uint8_t)example_data[i];
+		int rc = parse_PPP_stream(newbyte, &unstuffed, &stuffed);
+		if(rc != 0)
+		{
+			frame_size = rc;
+		}
+	}
+	TEST_ASSERT_NOT_EQUAL(0, frame_size);
+	TEST_ASSERT_EQUAL(5, unstuffed.length);
+	size_t unstuffed_idx = 0;
+	for(int i = 1; i <= 5; i++)
+	{
+		TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
+	}
+
+}
+
 // Test 4: PPP stream parsing
 void test_PPP_stream_parsing(void)
 {
