@@ -174,22 +174,23 @@ void test_bytestream_cobs_multiple_strays(void)
 		{
 			expect_overrun = true;
 		}		
-		int rc = bytestream(newbyte, &stream, 0);
+		int bsrc = bytestream(newbyte, &stream, 0);
 		if(expect_overrun)
 		{
-			TEST_ASSERT_EQUAL(STREAM_ERROR_OVERRUN, rc);
+			TEST_ASSERT_EQUAL(STREAM_ERROR_OVERRUN, bsrc);
 			TEST_ASSERT_EQUAL(0, stream.pos);
 		}
 		else
 		{
-			TEST_ASSERT(rc == STREAM_SUCCESS || rc == STREAM_IN_PROGRESS);
+			TEST_ASSERT(bsrc == STREAM_SUCCESS || bsrc == STREAM_IN_PROGRESS);
 		}
-		if(rc == STREAM_SUCCESS)
+		if(bsrc == STREAM_SUCCESS)
 		{
 			cobs_buf_t encoded = {stream.buf, stream.size, stream.len, COBS_ENCODED};
-			int rc = cobs_decode_double_buffer(&encoded, &decoded);
-			if(rc == COBS_SUCCESS && decoded.length > 0)
+			int cobsrc = cobs_decode_double_buffer(&encoded, &decoded);
+			if(cobsrc == COBS_SUCCESS && decoded.length > 0)
 			{
+				TEST_ASSERT_EQUAL(STREAM_SUCCESS, bsrc);
 				frame_size = decoded.length;
 				found_frame_count++;
 				if(found_frame_count == 1)
