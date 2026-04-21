@@ -12,11 +12,11 @@ typedef struct bytestream_buf_t
 }bytestream_buf_t;
 
 enum {
-	STREAM_SUCCESS = 0,
-	STREAM_IN_PROGRESS = 1,
-	STREAM_ERROR_NULLPTR = -1,
-	STREAM_ERROR_OVERRUN = -2,
-	STREAM_ERROR_EMPTYBUFFER = -3
+	BYTESTREAM_SUCCESS = 0,
+	BYTESTREAM_IN_PROGRESS = 1,
+	BYTESTREAM_ERROR_NULLPTR = -1,
+	BYTESTREAM_ERROR_OVERRUN = -2,
+	BYTESTREAM_ERROR_EMPTYBUFFER = -3
 };
 
 int bytestream(unsigned char new_byte, bytestream_buf_t * input, unsigned char delimiter);					//for cobs decode
