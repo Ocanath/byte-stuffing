@@ -3,7 +3,7 @@
 /*
 Basic check function
 */
-static int check_buf(bytestream_buf_t * buf)
+static int check_buf(bytestream_t * buf)
 {
 	if(buf == NULL)
 	{
@@ -24,10 +24,12 @@ static int check_buf(bytestream_buf_t * buf)
 	return BYTESTREAM_SUCCESS;
 }
 
+
+
 /*
 Unified logic for delimiter character based stream decoding
 */
-int bytestream(unsigned char new_byte, bytestream_buf_t * input, unsigned char delimiter)
+int bytestream(unsigned char new_byte, bytestream_t * input, unsigned char delimiter)
 {
 	int rc = check_buf(input);
 	if(rc != BYTESTREAM_SUCCESS)
@@ -52,32 +54,3 @@ int bytestream(unsigned char new_byte, bytestream_buf_t * input, unsigned char d
 	return BYTESTREAM_IN_PROGRESS;
 }
 
-
-
-
-
-int bytestream_dual_delimiter(unsigned char new_byte, bytestream_buf_t * input, unsigned char delimiter)
-{
-	int rc = check_buf(input);
-	if(rc != BYTESTREAM_SUCCESS)
-	{
-		return rc;
-	}
-
-	if(input->pos >= input->size)
-	{
-		input->pos = 0;
-		return BYTESTREAM_ERROR_OVERRUN;
-	}
-
-	input->buf[input->pos++] = new_byte;
-
-	if(new_byte == delimiter)
-	{
-		input->len = input->pos;
-		input->pos = 0;
-		input->buf[input->pos++] = new_byte;
-		return BYTESTREAM_SUCCESS;	//mark "input" as valid for decode
-	}
-	return BYTESTREAM_IN_PROGRESS;
-}

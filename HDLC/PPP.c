@@ -1,5 +1,32 @@
 #include "PPP.h"
 
+enum {
+	CHECK_SUCCESS = 0,
+	CHECK_ERROR_INVALID_ARGUMENT = -1,
+	CHECK_ERROR_OVERRUN = -2
+};
+
+static int check_buf(ppp_buffer_t * buf)
+{
+	if(buf == NULL)
+	{
+		return CHECK_ERROR_INVALID_ARGUMENT;
+	}
+	if(buf->buf == NULL)
+	{
+		return CHECK_ERROR_INVALID_ARGUMENT;
+	}
+	if(buf->size == 0)
+	{
+		return CHECK_ERROR_INVALID_ARGUMENT;
+	}
+	if(buf->length > buf->size)
+	{
+		return CHECK_ERROR_OVERRUN;
+	}
+	return CHECK_SUCCESS;
+}
+
 /*
 	Takes a payload and stuffs it based on PPP byte stuffing protocol. 
 	Result is available in a global fixed stuffing buffer
@@ -16,32 +43,124 @@
 		returns: the length of the stuffed buffer, or 0 if the stuffed buffer is overrun
 		
 */
-int PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
+size_t PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 {
-	int bidx = 0;
-	stuffed_buffer->buf[bidx++] = FRAME_CHAR;
+	//pre-flight check for message validity
+	if(check_buf(unstuffed_buffer) != CHECK_SUCCESS)
+	{
+		return 0;	
+	}
+	if(check_buf(stuffed_buffer) != CHECK_SUCCESS)
+	{
+		return 0;	
+	}
+
+	size_t bidx = 0;
 	for(int i = 0; i < unstuffed_buffer->length; i++)
 	{
 		uint8_t b = unstuffed_buffer->buf[i];
 		if( (b == FRAME_CHAR) || (b == ESC_CHAR) )
 		{
-			if(bidx + 1 >= stuffed_buffer->size)
+			if(bidx + 2 >= stuffed_buffer->size)
+			{
 				return 0;
+			}
 			stuffed_buffer->buf[bidx++] = ESC_CHAR;
 			stuffed_buffer->buf[bidx++] = b ^ ESC_MASK;
 		}
 		else
 		{
 			if(bidx >= stuffed_buffer->size)
+			{
 				return 0;
+			}
 			stuffed_buffer->buf[bidx++] = b;
 		}
+	}
+	if(bidx >= stuffed_buffer->size)
+	{
+		return 0;
 	}
 	stuffed_buffer->buf[bidx++] = FRAME_CHAR;
 	stuffed_buffer->length = bidx;
 	return bidx;
 }
 
+/** @brief Helper for in-place buffer stuffing. Does in-place copy forward to prepend a byte at position 0.
+ * @param byte The byte to prepend into the slice pointed to by subset
+ * @returns an int 'check' code - 0 on success. Breaks public api pattern but valid for internal use. HDLC-style encoding is legacy anyway - cobs is preferred
+ * */
+static int prepend_byte(unsigned char byte, ppp_buffer_t * subset)
+{
+	int rc = check_buf(subset);
+	if(rc != CHECK_SUCCESS)
+	{
+		return rc;
+	}
+
+	//copy forward
+	if(subset->length + 1 > subset->size)
+	{
+		return CHECK_ERROR_OVERRUN;
+	}
+	for(int i = (int)(subset->length-1); i >= 0; i--)
+	{
+		subset->buf[i+1] = subset->buf[i];
+	}
+	subset->length += 1;
+	subset->buf[0] = byte;
+	return CHECK_SUCCESS;
+}
+
+/** @brief HDLC encode in-place 
+ * O(n^2) in the worst case, since every in-place copy expansion for a byte insertion is O(n).
+ * Practical reality is linear runtime - but only the PPP_stuff has O(n) guaranteed worst-case runtime.
+ * 
+ */
+size_t PPP_stuff_single_buffer(ppp_buffer_t * msg)
+{
+	int rc = check_buf(msg);
+	if(rc != CHECK_SUCCESS)
+	{
+		return 0;
+	}
+	size_t bidx = 0;
+	for(int i = 0; i < msg->length; i++)
+	{
+		uint8_t b = msg->buf[i];
+		if( (b == FRAME_CHAR) || (b == ESC_CHAR) )
+		{
+			if(msg->length + 2 >= msg->size)	//we need two additional bytes of overhead. preflight check
+			{
+				return 0;
+			}
+			ppp_buffer_t slice = {&msg->buf[bidx], msg->size - bidx, msg->length - bidx};
+			rc = prepend_byte(ESC_CHAR, &slice);
+			if(rc != CHECK_SUCCESS)
+			{
+				return 0;
+			}
+			msg->length++;
+			bidx++;
+			msg->buf[bidx++] = b ^ ESC_MASK;
+		}
+		else
+		{
+			if(bidx >= msg->size)
+			{
+				return 0;
+			}
+			msg->buf[bidx++] = b;
+		}
+	}
+	if(bidx >= msg->size)
+	{
+		return 0;
+	}
+	msg->buf[bidx++] = FRAME_CHAR;
+	msg->length = bidx;
+	return bidx;
+}
 
 /*
 	Note: This will cause a memory overrun if the size of the payload is less than half the stuffed buffer size + 2
@@ -59,15 +178,19 @@ int PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 		payload: the working buffer. contains resulting unstuffed data after function returns successfully
 		returns: the actual size of the payload, after unstuffing operation is complete. returns 0 on failure
 */
-int PPP_unstuff( ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
+size_t PPP_unstuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 {
-	if(stuffed_buffer->buf[0] != FRAME_CHAR)
+	if(check_buf(unstuffed_buffer) != CHECK_SUCCESS)
 	{
-		unstuffed_buffer->length = 0;
-		return (int)(unstuffed_buffer->length);
+		return 0;	
 	}
-	int pld_idx = 0;	//payload/working buffer index, starts at 0
-	for(int i = 1; i < stuffed_buffer->length; i++)
+	if(check_buf(stuffed_buffer) != CHECK_SUCCESS)
+	{
+		return 0;	
+	}
+
+	size_t pld_idx = 0;	//payload/working buffer index, starts at 0
+	for(size_t i = 0; i < stuffed_buffer->length; i++)
 	{
 		 if(stuffed_buffer->buf[i] == ESC_CHAR)	//marks prepend of xored data. xor again to recover the original value
 		 {
@@ -75,27 +198,27 @@ int PPP_unstuff( ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 			if(i >= stuffed_buffer->length || pld_idx >= unstuffed_buffer->size)	//memory overrun guards. do two because we could overrun the while loop guards here
 			{
 				unstuffed_buffer->length = 0;
-				return (int)(unstuffed_buffer->length);
+				return unstuffed_buffer->length;
 			}
-			 unstuffed_buffer->buf[pld_idx++] = stuffed_buffer->buf[i] ^ ESC_MASK;
+			unstuffed_buffer->buf[pld_idx++] = stuffed_buffer->buf[i] ^ ESC_MASK;
 		 }
 		 else if(stuffed_buffer->buf[i] == FRAME_CHAR)	//end of buffer, return 
 		 {
 			unstuffed_buffer->length = pld_idx;
-			return (int)(unstuffed_buffer->length);	
+			return unstuffed_buffer->length;	//this is the only 'valid data' case - recovered a delimited frame. Simple logic
 		 }
 		 else	//unaffected data, 'normal' case
 		 {
 			 if(pld_idx >= unstuffed_buffer->size)
 			 {
 				unstuffed_buffer->length = 0;
-				 return (int)(unstuffed_buffer->length);
+				return unstuffed_buffer->length;
 			 }
 			 unstuffed_buffer->buf[pld_idx++] = stuffed_buffer->buf[i];
 		 }
 	}
 	unstuffed_buffer->length = 0;
-	return (int)(unstuffed_buffer->length); //we have overrun the stuffed buffer without finding a frame character, meaning the buffer is improperly formed. return 0 length because payload is also invalid
+	return unstuffed_buffer->length; //we have overrun the stuffed buffer without finding a frame character, meaning the buffer is improperly formed. return 0 length because payload is also invalid
 }
 
 /*
@@ -119,23 +242,27 @@ int PPP_unstuff( ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 *	payload_buffer: result of PPP unstuffing
 *	returns: size of the payload buffer. valid 
 */
-int parse_PPP_stream(uint8_t new_byte, ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * input_buffer)
+size_t parse_PPP_stream(uint8_t new_byte, ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * input)
 {
-	if (input_buffer->length < input_buffer->size)
+	if(check_buf(unstuffed_buffer) != CHECK_SUCCESS)
 	{
-		input_buffer->buf[input_buffer->length++] = new_byte;
-	}
-	else
-	{
-		input_buffer->length = 0;	//overwrite everything in the buffer in the buffer overflow case. can change to circular buffer in future implementations
 		return 0;
 	}
-	if (new_byte == FRAME_CHAR)
+	if(check_buf(input) != CHECK_SUCCESS)
 	{
-		int pld_size = PPP_unstuff(unstuffed_buffer, input_buffer);	//important to use buffer idx as input buffer size, because the section of the input buffer after buffer idx might contain partial data frames
-		input_buffer->length = 0;
-		input_buffer->buf[input_buffer->length++] = new_byte;
-		return pld_size;	//in the case that it is zero, return 0 anyway
+		return 0;
+	}
+
+	if(input->length >= input->size)
+	{
+		return 0;	//overrun
+	}
+	input->buf[input->length++] = new_byte;
+	if(new_byte == FRAME_CHAR)
+	{
+		size_t unstuffed_len = PPP_unstuff(unstuffed_buffer, input);
+		input->length = 0;
+		return unstuffed_len;	//equivalent to unstuffed_buffer.length in virtually all cases but semantically more appropriate to forward return code of unstuff, in case of a check failing.
 	}
 	return 0;
 }
