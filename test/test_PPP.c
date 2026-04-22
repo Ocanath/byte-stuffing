@@ -512,8 +512,51 @@ void test_dma_handler(void)
 
 void test_stream_strings(void)
 {
-	const char * teststr = "~hello~~goodbye~\0~~~~~~stray~~characters~}}}}~";
+	const char teststr[] = "~hello~~goodbye~\0~~~~~~stray~~characters~}}}}~";
+	size_t len = sizeof(teststr) - 1;	//teststr has a stray null terminator - so we have to hardcode instead of use strlen
 
+	const char * expectedstrings[6] = {
+		"hello",
+		"goodbye",
+		"\0",
+		"stray",
+		"characters",
+		"]]"
+	};
+
+	unsigned char stream_mem[32] = {};
+	ppp_buffer_t stream = {
+		stream_mem,
+		sizeof(stream_mem),
+		0
+	};
+	unsigned char unstuffing_mem[sizeof(stream_mem)*2+1] = {};
+	ppp_buffer_t unstuff = {
+		unstuffing_mem,
+		sizeof(unstuffing_mem),
+		0
+	};
+
+	size_t reply_index = 0;
+	for(size_t idx = 0; idx < len; idx++)
+	{
+		unsigned char newbyte = (unsigned char)teststr[idx];
+		size_t unstuffedlen = parse_PPP_stream(newbyte, &unstuff, &stream);
+		if(unstuffedlen != 0)
+		{
+			TEST_ASSERT_EQUAL(unstuffedlen, unstuff.length);
+			TEST_ASSERT(reply_index < 6);
+			size_t expected_len = strlen(expectedstrings[reply_index]);
+			if(reply_index == 2)
+				expected_len = 1;	//catch the /0 exception, cuz strlen won't work for that one
+			TEST_ASSERT_EQUAL(expected_len, unstuff.length);
+			TEST_ASSERT_EQUAL_CHAR_ARRAY(expectedstrings[reply_index], unstuff.buf, unstuff.length);			
+			reply_index++;
+			unstuff.buf[unstuff.length] = 0;
+			printf("%s\n",unstuff.buf);
+		}
+	}
+	TEST_ASSERT_EQUAL(6, reply_index);
 	
 }
 
@@ -626,7 +669,7 @@ void test_ppp_encode_in_place_mixed(void)
 		.size = sizeof(correct_size),
 		.length = len
 	};
-	
+
 	size_t stuffed_len = PPP_stuff_single_buffer(&inplace);
 	TEST_ASSERT_NOT_EQUAL(0, stuffed_len);
 	TEST_ASSERT_EQUAL(stuffed_len, inplace.length);
