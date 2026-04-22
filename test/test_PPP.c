@@ -517,7 +517,7 @@ void test_stream_strings(void)
 	
 }
 
-void test_encode_strings(void)
+void test_encode_strings_maxoverhead(void)
 {
 	char teststr[] = "}}}}~~~~~~~~}}}}";
 	size_t len = strlen(teststr);	
@@ -567,3 +567,112 @@ void test_encode_strings(void)
 }
 
 
+void test_ppp_encode_in_place_maxoverhead(void)
+{
+	char teststr[] = "}}}}~~~~~~~~}}}}";
+	size_t len = strlen(teststr);	
+	ppp_buffer_t inplace;
+
+	unsigned char onebyte_undersized[(sizeof(teststr)-1)*2];
+	unsigned char correct_size[(sizeof(teststr)-1)*2+1];
+
+	unsigned char unstuff_mem[sizeof(teststr) - 1] = {};
+	ppp_buffer_t unstuff = {
+		unstuff_mem,
+		sizeof(unstuff_mem),
+		0
+	};
+	
+	inplace = (ppp_buffer_t){		//obviously undersized, in-place
+		.buf = (unsigned char *)teststr,
+		.size = sizeof(teststr),
+		.length = len
+	};
+	TEST_ASSERT_EQUAL(2, PPP_unstuff(&unstuff, &inplace));	//technically teststr is a valid stuffed frame up to the first delimiter	
+	TEST_ASSERT_EQUAL(0, PPP_stuff_single_buffer(&inplace));	//this should fail due to lack of overhead
+
+	strcpy(onebyte_undersized,  teststr);
+	inplace = (ppp_buffer_t){
+		.buf = onebyte_undersized,
+		.size = sizeof(onebyte_undersized),
+		.length = len
+	};
+	TEST_ASSERT_EQUAL(0, PPP_stuff_single_buffer(&inplace));
+
+	strcpy(correct_size,  teststr);
+	inplace = (ppp_buffer_t){
+		.buf = correct_size,
+		.size = sizeof(correct_size),
+		.length = len
+	};
+	TEST_ASSERT_EQUAL(len*2+1, PPP_stuff_single_buffer(&inplace));
+	TEST_ASSERT_EQUAL(len*2+1, inplace.length);
+	
+	memset(unstuff.buf, 0, unstuff.size);
+	size_t unstuff_size = PPP_unstuff(&unstuff, &inplace);
+	TEST_ASSERT_EQUAL_CHAR_ARRAY(teststr, unstuff.buf, len);
+}
+
+
+void test_ppp_encode_in_place_mixed(void)
+{
+	char teststr[] = "}}asdfasdfa}}~~~asf~6734734~2~~~}sadfas}}}";
+	size_t len = strlen(teststr);	
+
+	unsigned char correct_size[(sizeof(teststr)-1)*2+1];
+	strcpy(correct_size,  teststr);
+	ppp_buffer_t inplace = (ppp_buffer_t){
+		.buf = correct_size,
+		.size = sizeof(correct_size),
+		.length = len
+	};
+	
+	size_t stuffed_len = PPP_stuff_single_buffer(&inplace);
+	TEST_ASSERT_NOT_EQUAL(0, stuffed_len);
+	TEST_ASSERT_EQUAL(stuffed_len, inplace.length);
+	
+	unsigned char unstuff_mem[sizeof(teststr) - 1] = {};
+	ppp_buffer_t unstuff = {
+		unstuff_mem,
+		sizeof(unstuff_mem),
+		0
+	};
+	memset(unstuff.buf, 0, unstuff.size);
+	size_t unstuff_size = PPP_unstuff(&unstuff, &inplace);
+	TEST_ASSERT_EQUAL_CHAR_ARRAY(teststr, unstuff.buf, len);
+}
+
+
+
+void test_ppp_encode_copy_mixed(void)
+{
+	char teststr[] = "}}asdfasdfa}}~~~asf~6734734~2~~~}sadfas}}}";
+	size_t len = strlen(teststr);	
+	ppp_buffer_t inplace = (ppp_buffer_t){
+		.buf = teststr,
+		.size = len,
+		.length = len
+	};
+	unsigned char correct_size[(sizeof(teststr)-1)*2+1];
+	ppp_buffer_t stuffed = {
+		correct_size,
+		sizeof(correct_size),
+		0	
+	};
+	size_t stuffed_len = PPP_stuff(&inplace, &stuffed);
+	TEST_ASSERT_NOT_EQUAL(0, stuffed_len);
+	TEST_ASSERT_EQUAL(stuffed_len, stuffed.length);
+	TEST_ASSERT_EQUAL(len, inplace.length);	//sanity check
+
+	unsigned char unstuff_mem[sizeof(teststr) - 1] = {};
+	ppp_buffer_t unstuff = {
+		unstuff_mem,
+		sizeof(unstuff_mem),
+		0
+	};
+	memset(unstuff.buf, 0, unstuff.size);
+	size_t unstuff_size = PPP_unstuff(&unstuff, &stuffed);
+	TEST_ASSERT_EQUAL(len, unstuff_size);
+	TEST_ASSERT_EQUAL(unstuff_size, unstuff.length);
+	TEST_ASSERT_EQUAL_CHAR_ARRAY(teststr, unstuff.buf, len);
+}

@@ -61,7 +61,7 @@ size_t PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer)
 		uint8_t b = unstuffed_buffer->buf[i];
 		if( (b == FRAME_CHAR) || (b == ESC_CHAR) )
 		{
-			if(bidx + 2 >= stuffed_buffer->size)
+			if(bidx + 2 > stuffed_buffer->size)
 			{
 				return 0;
 			}
@@ -125,12 +125,12 @@ size_t PPP_stuff_single_buffer(ppp_buffer_t * msg)
 		return 0;
 	}
 	size_t bidx = 0;
-	for(int i = 0; i < msg->length; i++)
+	while(bidx < msg->length)
 	{
-		uint8_t b = msg->buf[i];
+		uint8_t b = msg->buf[bidx];
 		if( (b == FRAME_CHAR) || (b == ESC_CHAR) )
 		{
-			if(msg->length + 2 >= msg->size)	//we need two additional bytes of overhead. preflight check
+			if(msg->length + 2 > msg->size)	//we need two additional bytes of overhead. preflight check
 			{
 				return 0;
 			}
