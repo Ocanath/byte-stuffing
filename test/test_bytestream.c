@@ -34,8 +34,7 @@ void test_bytestream_PPP_multiple_strays(void)
 
 
 	unsigned char stream_mem[32] = {0};
-	stream_mem[0] = '~';
-	bytestream_t stream = {&stream_mem[1], sizeof(stream_mem) - 1, 0, 0};
+	bytestream_t stream = {stream_mem, sizeof(stream_mem), 0, 0};
 
 	unsigned char unstuff_mem[sizeof(stream_mem)*2+2] = {0};
 	ppp_buffer_t unstuffed = {unstuff_mem, sizeof(unstuff_mem), 0};
