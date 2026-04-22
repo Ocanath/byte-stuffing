@@ -61,7 +61,7 @@ void test_bytestream_PPP_multiple_strays(void)
 		}
 		if(rc == BYTESTREAM_SUCCESS)
 		{
-			ppp_buffer_t stuffed = {stream_mem, sizeof(stream_mem), stream.len + 1};
+			ppp_buffer_t stuffed = {stream_mem, sizeof(stream_mem), stream.len};
 			int unstuffed_size = PPP_unstuff(&unstuffed, &stuffed);
 
 			if(unstuffed_size != 0)
