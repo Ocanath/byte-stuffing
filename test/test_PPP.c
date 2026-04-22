@@ -2,7 +2,6 @@
 #include "PPP.h"
 #include "dma_style_ppp_handler.h"
 #include <stdlib.h>
-#include <time.h>
 
 #define PAYLOAD_SIZE 8
 #define BUFFER_SIZE 128
@@ -57,10 +56,9 @@ void print_hex_buffer(uint8_t * arr, int size)
 void test_PPP_stuff_basic_random_data(void)
 {
     // Generate random test data
-    srand(time(NULL));
     for (int i = 0; i < PAYLOAD_SIZE; i++)
     {
-        example_data[i] = rand() % 0x100;
+        example_data[i] = i;
     }
     unstuffed_buffer.length = PAYLOAD_SIZE;
     
@@ -72,8 +70,7 @@ void test_PPP_stuff_basic_random_data(void)
     TEST_ASSERT_LESS_OR_EQUAL(BUFFER_SIZE, stuffed_size);
     
     // Verify frame characters are present
-    TEST_ASSERT_EQUAL(FRAME_CHAR, stuffed_buffer.buf[0]);
-    TEST_ASSERT_EQUAL(FRAME_CHAR, stuffed_buffer.buf[stuffed_size - 1]);
+	TEST_ASSERT_EQUAL(FRAME_CHAR, stuffed_buffer.buf[stuffed_size - 1]);
     
     printf("Original Data: ");
     print_hex_buffer(example_data, PAYLOAD_SIZE);
@@ -88,7 +85,7 @@ void test_PPP_stuff_with_frame_character(void)
     // Create test data with frame character
     for (int i = 0; i < 3; i++)
     {
-        example_data[i] = rand() % 0x100;
+        example_data[i] = i;
     }
     example_data[3] = FRAME_CHAR;
     unstuffed_buffer.length = 4;
@@ -101,12 +98,11 @@ void test_PPP_stuff_with_frame_character(void)
     TEST_ASSERT_LESS_OR_EQUAL(BUFFER_SIZE, stuffed_size);
     
     // Verify frame characters are present
-    TEST_ASSERT_EQUAL(FRAME_CHAR, stuffed_buffer.buf[0]);
     TEST_ASSERT_EQUAL(FRAME_CHAR, stuffed_buffer.buf[stuffed_size - 1]);
     
     // Verify the frame character was escaped
-    TEST_ASSERT_EQUAL(ESC_CHAR, stuffed_buffer.buf[4]);
-    TEST_ASSERT_EQUAL(FRAME_CHAR ^ ESC_MASK, stuffed_buffer.buf[5]);
+    TEST_ASSERT_EQUAL(ESC_CHAR, stuffed_buffer.buf[3]);
+    TEST_ASSERT_EQUAL(FRAME_CHAR ^ ESC_MASK, stuffed_buffer.buf[4]);
     
     printf("Data with frame char: ");
     print_hex_buffer(example_data, 4);
@@ -121,7 +117,7 @@ void test_PPP_unstuff_basic(void)
     // Create test data
     for (int i = 0; i < PAYLOAD_SIZE; i++)
     {
-        example_data[i] = rand() % 0x100;
+        example_data[i] = i;
     }
     unstuffed_buffer.length = PAYLOAD_SIZE;
     
@@ -175,6 +171,7 @@ void test_PPP_stream_parsing_strays(void)
 	unsigned char unstuff_mem[sizeof(stuff_mem)*2+2] = {0};
 	ppp_buffer_t unstuffed = {unstuff_mem, sizeof(unstuff_mem), 0};
 
+	int decode_count = 0;
 	int frame_size = 0;
 	for(size_t i = 0; i < sizeof(example_data); i++)
 	{
@@ -183,16 +180,27 @@ void test_PPP_stream_parsing_strays(void)
 		if(rc != 0)
 		{
 			frame_size = rc;
+			decode_count++;
+			if(decode_count == 1)
+			{
+				TEST_ASSERT_EQUAL(frame_size, 1);
+				TEST_ASSERT_EQUAL(frame_size, unstuffed.length);
+				TEST_ASSERT_EQUAL(0, unstuffed.buf[0]);
+			}
+			else if (decode_count == 2)
+			{
+				TEST_ASSERT_EQUAL(frame_size, 5);
+				TEST_ASSERT_EQUAL(frame_size, unstuffed.length);
+				size_t unstuffed_idx = 0;
+				for(int i = 1; i <= 5; i++)
+				{
+					TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
+				}
+
+			}
 		}
 	}
-	TEST_ASSERT_NOT_EQUAL(0, frame_size);
-	TEST_ASSERT_EQUAL(5, unstuffed.length);
-	size_t unstuffed_idx = 0;
-	for(int i = 1; i <= 5; i++)
-	{
-		TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
-	}
-
+	TEST_ASSERT_EQUAL(decode_count, 2);
 }
 
 
@@ -216,6 +224,12 @@ void test_PPP_stream_multiple_strays(void)
 	example_data[len++] = 7;
 	example_data[len++] = 8;
 	example_data[len++] = '~';
+	example_data[len++] = '~';	//prevent desync
+	example_data[len++] = '~';
+	example_data[len++] = 9;
+	example_data[len++] = 10;
+	example_data[len++] = '~';
+
 
 
 	unsigned char stuff_mem[32] = {0};
@@ -236,6 +250,12 @@ void test_PPP_stream_multiple_strays(void)
 			found_frame_count++;
 			if(found_frame_count == 1)
 			{
+				TEST_ASSERT_EQUAL(frame_size, 1);
+				TEST_ASSERT_EQUAL(frame_size, unstuffed.length);
+				TEST_ASSERT_EQUAL(0, unstuffed.buf[0]);
+			}
+			else if(found_frame_count == 2)
+			{
 				TEST_ASSERT_EQUAL(5, unstuffed.length);
 				size_t unstuffed_idx = 0;
 				for(int i = 1; i <= 5; i++)
@@ -243,13 +263,13 @@ void test_PPP_stream_multiple_strays(void)
 					TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
 				}
 			}
-			else if(found_frame_count == 2)
+			else if(found_frame_count == 3)
 			{
 				TEST_ASSERT_EQUAL(1, frame_size);
 				TEST_ASSERT_EQUAL(frame_size, unstuffed.length);
 				TEST_ASSERT_EQUAL(0, unstuffed.buf[0]);
 			}
-			else if(found_frame_count == 3)
+			else if (found_frame_count == 4)
 			{
 				TEST_ASSERT_EQUAL(3, unstuffed.length);
 				size_t unstuffed_idx = 0;
@@ -258,9 +278,18 @@ void test_PPP_stream_multiple_strays(void)
 					TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
 				}
 			}
+			else if(found_frame_count == 5)
+			{
+				TEST_ASSERT_EQUAL(2, unstuffed.length);
+				size_t unstuffed_idx = 0;
+				for(int i = 9; i <= 10; i++)
+				{
+					TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
+				}
+			}
 		}
 	}
-	TEST_ASSERT_EQUAL(3, found_frame_count);
+	TEST_ASSERT_EQUAL(5, found_frame_count);
 }
 
 
@@ -361,8 +390,8 @@ void test_PPP_stuff_with_esc_character(void)
     TEST_ASSERT_GREATER_THAN(0, stuffed_size);
     
     // Verify the ESC character was escaped
-    TEST_ASSERT_EQUAL(ESC_CHAR, stuffed_buffer.buf[1]);
-    TEST_ASSERT_EQUAL(ESC_CHAR ^ ESC_MASK, stuffed_buffer.buf[2]);
+    TEST_ASSERT_EQUAL(ESC_CHAR, stuffed_buffer.buf[0]);
+    TEST_ASSERT_EQUAL(ESC_CHAR ^ ESC_MASK, stuffed_buffer.buf[1]);
     
     printf("Data with ESC char: ");
     print_hex_buffer(example_data, 3);
@@ -442,12 +471,13 @@ void test_dma_handler(void)
         .length = 0
     };
 
-    unsigned char message[] = "~hello~~test~~goodbye~~~miss~~nomiss~";
+    unsigned char message[] = "~hello~~test~~goodbye~~~nomiss1~~nomiss2~";
     unsigned char * unstuffed_messages_chk[] = {
         "hello",
         "test",
         "goodbye",
-        "nomiss"
+		"nomiss1",
+        "nomiss2"
     };
     int check_message_index = 0;
     for(int i = 0; i < sizeof(message); i++)
@@ -461,21 +491,18 @@ void test_dma_handler(void)
         {
             // int length = sizeof(message) - dma.CNDTR;
             rx_alias.length = (rx_alias.size - (size_t)dma.CNDTR);
-            if(rx_alias.length != 1)
-            {
-                dma.CNDTR = sizeof(rxbuf);
-                int retlen = PPP_unstuff(&rx_unstuffed, &rx_alias);
-                if(retlen != 0)
-                {
-                    printf("DMA Message Received: ");
-                    print_message(&rx_unstuffed);
-                    for(int chk = 0; chk < rx_unstuffed.length; chk++)
-                    {
-                        TEST_ASSERT_EQUAL(unstuffed_messages_chk[check_message_index][chk], rx_unstuffed.buf[chk]);
-                    }
-                    check_message_index++;
-                }
-            }
+			dma.CNDTR = sizeof(rxbuf);
+			int retlen = PPP_unstuff(&rx_unstuffed, &rx_alias);
+			if(retlen != 0)
+			{
+				printf("DMA Message Received: ");
+				print_message(&rx_unstuffed);
+				for(int chk = 0; chk < rx_unstuffed.length; chk++)
+				{
+					TEST_ASSERT_EQUAL(unstuffed_messages_chk[check_message_index][chk], rx_unstuffed.buf[chk]);
+				}
+				check_message_index++;
+			}
         }
     }
 }
