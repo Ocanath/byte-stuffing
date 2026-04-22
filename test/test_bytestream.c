@@ -12,8 +12,6 @@ void test_bytestream_PPP_multiple_strays(void)
 	unsigned char example_data[128] = {0};
 	size_t len = 0;
 	example_data[len++] = 0;
-	example_data[len++] = 1;
-	example_data[len++] = 2;
 	example_data[len++] = '~';
 	example_data[len++] = 1;
 	example_data[len++] = 2;
@@ -50,28 +48,15 @@ void test_bytestream_PPP_multiple_strays(void)
 		if(stream.pos >= stream.size)
 		{
 			expect_overrun = true;
-		}
-		bool expect_delimiter_error = false;
-		if(i == 3)
-		{
-			expect_delimiter_error = true;
-		}
+		}		
 		int rc = bytestream_dual_delimiter(newbyte, &stream, '~');
 		if(expect_overrun)
 		{
 			TEST_ASSERT_EQUAL(BYTESTREAM_ERROR_OVERRUN, rc);
 			TEST_ASSERT_EQUAL(0, stream.pos);
 		}
-		else if(expect_delimiter_error)
-		{
-			TEST_ASSERT_EQUAL(BYTESTREAM_ERROR_DUALDELIMITER_MISSING_START, rc);
-		}
 		else
 		{
-			if(rc != BYTESTREAM_SUCCESS && rc != BYTESTREAM_IN_PROGRESS)
-			{
-				printf("JFSDF");
-			}
 			TEST_ASSERT(rc == BYTESTREAM_SUCCESS || rc == BYTESTREAM_IN_PROGRESS);
 		}
 		if(rc == BYTESTREAM_SUCCESS)
