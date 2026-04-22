@@ -411,7 +411,7 @@ void test_ppp_stream(void)
 
 void test_dma_emulation(void)
 {
-    unsigned char rxbuf[8] = {};
+    unsigned char rxbuf[8] = {0};
     dma_registers_t dma = {
         .CNDTR = sizeof(rxbuf),
         .CMAR = rxbuf,
@@ -451,7 +451,7 @@ void print_message(ppp_buffer_t * buf)
 
 void test_dma_handler(void)
 {
-    unsigned char rxbuf[18] = {};
+    unsigned char rxbuf[18] = {0};
     dma_registers_t dma = {
         .CNDTR = sizeof(rxbuf),
         .CMAR = rxbuf,
@@ -464,7 +464,7 @@ void test_dma_handler(void)
         .size = sizeof(rxbuf),
         .length = 0
     };
-    unsigned char unstuffed[8] = {};
+    unsigned char unstuffed[8] = {0};
     ppp_buffer_t rx_unstuffed = {
         .buf = unstuffed,
         .size = sizeof(unstuffed),
@@ -524,13 +524,13 @@ void test_stream_strings(void)
 		"]]"
 	};
 
-	unsigned char stream_mem[32] = {};
+	unsigned char stream_mem[32] = {0};
 	ppp_buffer_t stream = {
 		stream_mem,
 		sizeof(stream_mem),
 		0
 	};
-	unsigned char unstuffing_mem[sizeof(stream_mem)*2+1] = {};
+	unsigned char unstuffing_mem[sizeof(stream_mem)*2+1] = {0};
 	ppp_buffer_t unstuff = {
 		unstuffing_mem,
 		sizeof(unstuffing_mem),
@@ -577,9 +577,9 @@ void test_encode_strings_maxoverhead(void)
 		sizeof(teststr),
 		len
 	};
-	unsigned char stuff_mem_small_1[sizeof(teststr) - 1] = {};
-	unsigned char stuff_mem_small_2[(sizeof(teststr) - 1)*2] = {};	//knock off the null terminator
-	unsigned char stuff_mem_just_right[(sizeof(teststr)-1)*2+1] = {}; //includes null terminator
+	unsigned char stuff_mem_small_1[sizeof(teststr) - 1] = {0};
+	unsigned char stuff_mem_small_2[(sizeof(teststr) - 1)*2] = {0};	//knock off the null terminator
+	unsigned char stuff_mem_just_right[(sizeof(teststr)-1)*2+1] = {0}; //includes null terminator
 	//OVERHEAD IS INPUT*2 + 1
 	
 	ppp_buffer_t stuffed = {
@@ -619,7 +619,7 @@ void test_ppp_encode_in_place_maxoverhead(void)
 	unsigned char onebyte_undersized[(sizeof(teststr)-1)*2];
 	unsigned char correct_size[(sizeof(teststr)-1)*2+1];
 
-	unsigned char unstuff_mem[sizeof(teststr) - 1] = {};
+	unsigned char unstuff_mem[sizeof(teststr) - 1] = {0};
 	ppp_buffer_t unstuff = {
 		unstuff_mem,
 		sizeof(unstuff_mem),
@@ -674,7 +674,7 @@ void test_ppp_encode_in_place_mixed(void)
 	TEST_ASSERT_NOT_EQUAL(0, stuffed_len);
 	TEST_ASSERT_EQUAL(stuffed_len, inplace.length);
 	
-	unsigned char unstuff_mem[sizeof(teststr) - 1] = {};
+	unsigned char unstuff_mem[sizeof(teststr) - 1] = {0};
 	ppp_buffer_t unstuff = {
 		unstuff_mem,
 		sizeof(unstuff_mem),
@@ -707,7 +707,7 @@ void test_ppp_encode_copy_mixed(void)
 	TEST_ASSERT_EQUAL(stuffed_len, stuffed.length);
 	TEST_ASSERT_EQUAL(len, inplace.length);	//sanity check
 
-	unsigned char unstuff_mem[sizeof(teststr) - 1] = {};
+	unsigned char unstuff_mem[sizeof(teststr) - 1] = {0};
 	ppp_buffer_t unstuff = {
 		unstuff_mem,
 		sizeof(unstuff_mem),

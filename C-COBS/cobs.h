@@ -31,19 +31,50 @@ enum
 
 typedef struct cobs_buf_t
 {
-    unsigned char * buf;
-    size_t size;
-    size_t length;
-    uint8_t encoded_state;
+    unsigned char * buf;        ///< Pointer to the backing byte array.
+    size_t size;                ///< Capacity of buf in bytes.
+    size_t length;              ///< Number of valid bytes currently in buf.
+    uint8_t encoded_state;      ///< Encoding state of buf: COBS_ENCODED or COBS_DECODED. Must match actual content or decode/encode calls will fail.
 } cobs_buf_t;
 
-//Double-buffer decode. Saves an additional copy operation if you are using a double buffered apporach, and relaxes parsing timing on decoded message which is best-practice for efficient serial streaming.
+/**
+ * @brief COBS-decode an encoded buffer into a separate output buffer.
+ * Saves a copy operation versus in-place decode and relaxes the timing window for consuming
+ * the decoded message, which is best practice for efficient serial streaming.
+ * @param encoded_msg Input: COBS-encoded buffer. encoded_state must be COBS_ENCODED.
+ * @param decoded_msg Output: decoded payload written here. buf and size must be set.
+ * @return COBS_SUCCESS on success, negative error code otherwise.
+ */
 int cobs_decode_double_buffer(cobs_buf_t * encoded_msg, cobs_buf_t * decoded_msg);
-//Function template for basic cobs encoding. Takes a DECODED buffer and encodes it into an ENCODED buffer.
+
+/**
+ * @brief COBS-encode a payload in-place.
+ * Encodes msg in-place. msg->encoded_state must be COBS_DECODED on entry and is updated to
+ * COBS_ENCODED on success.
+ * @param msg Buffer containing the payload to encode. buf, size, and length must be set.
+ * @return COBS_SUCCESS on success, negative error code otherwise.
+ */
 int cobs_encode_single_buffer(cobs_buf_t * msg);
-//Function template to handle an incoming byte stream. Uses ZERO as the delimiter, and double-buffers the message to allow sufficient time for parsing.
-int cobs_stream(unsigned char new_byte, cobs_buf_t * encoded_msg, cobs_buf_t * decoded_msg);	//this almost works if the encoded and decoded messages are the same size - the only issue is the length gets reset to 0 after encoding. You could have this function return the decoded message size instead of success
-//Helper function to prepend a zero to a single buffer frame. Useful if you are expecting non cobs encoded traffic and want to make sure your message is properly delimited by a stream decoder
+
+/**
+ * @brief Feed one byte of an incoming serial stream and decode a COBS frame when complete.
+ * Accumulates bytes into encoded_msg using zero as the frame delimiter. On delimiter receipt,
+ * decodes into decoded_msg via cobs_decode_double_buffer.
+ * @param new_byte Next byte from the incoming stream.
+ * @param encoded_msg Accumulation buffer for the raw encoded stream. Must persist across calls.
+ * @param decoded_msg Output payload buffer. Valid only when COBS_SUCCESS is returned.
+ * @return COBS_SUCCESS when a complete frame is decoded, COBS_STREAMING_IN_PROGRESS while accumulating,
+ *         negative error code on failure.
+ */
+int cobs_stream(unsigned char new_byte, cobs_buf_t * encoded_msg, cobs_buf_t * decoded_msg);
+
+/**
+ * @brief Prepend a zero delimiter byte to a buffer in-place.
+ * Shifts existing content forward by one byte and writes 0x00 at position 0. Useful for ensuring
+ * a message is properly framed before handing it to a zero-delimited stream decoder.
+ * @param msg Buffer to modify. Must have at least one byte of free headroom (size > length).
+ * @return COBS_SUCCESS on success, negative error code if the buffer is full or input is invalid.
+ */
 int cobs_prepend_zero_single_buffer(cobs_buf_t * msg);
 
 #ifdef __cplusplus
