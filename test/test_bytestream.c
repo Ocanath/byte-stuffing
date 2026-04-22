@@ -102,6 +102,115 @@ void test_bytestream_PPP_multiple_strays(void)
 
 
 
+void test_bytestream_PPP_multiple_strays_no_dual_delimiter(void)
+{
+	unsigned char example_data[128] = {0};
+	size_t len = 0;
+	example_data[len++] = 0;
+	example_data[len++] = '~';
+	example_data[len++] = 1;
+	example_data[len++] = 2;
+	example_data[len++] = 3;
+	example_data[len++] = 4;
+	example_data[len++] = 5;
+	example_data[len++] = '~';
+	example_data[len++] = 0;
+	example_data[len++] = '~';
+	example_data[len++] = 6;
+	example_data[len++] = 7;
+	example_data[len++] = 8;
+	example_data[len++] = '~';
+	example_data[len++] = '~';
+	example_data[len++] = '~';
+	example_data[len++] = 7;
+	example_data[len++] = 8;
+	example_data[len++] = '~';
+
+
+
+	unsigned char stream_mem[32] = {0};
+	stream_mem[0] = '~';
+	bytestream_buf_t stream = {&stream_mem[1], sizeof(stream_mem) - 1, 0, 0};
+
+	unsigned char unstuff_mem[sizeof(stream_mem)*2+2] = {0};
+	ppp_buffer_t unstuffed = {unstuff_mem, sizeof(unstuff_mem), 0};
+
+	int found_frame_count = 0;
+	int frame_size = 0;
+	for(size_t i = 0; i < sizeof(example_data); i++)
+	{
+		uint8_t newbyte = example_data[i];
+		bool expect_overrun = false;
+		if(stream.pos >= stream.size)
+		{
+			expect_overrun = true;
+		}		
+		int rc = bytestream(newbyte, &stream, '~');
+		if(expect_overrun)
+		{
+			TEST_ASSERT_EQUAL(BYTESTREAM_ERROR_OVERRUN, rc);
+			TEST_ASSERT_EQUAL(0, stream.pos);
+		}
+		else
+		{
+			TEST_ASSERT(rc == BYTESTREAM_SUCCESS || rc == BYTESTREAM_IN_PROGRESS);
+		}
+		if(rc == BYTESTREAM_SUCCESS)
+		{
+			ppp_buffer_t stuffed = {stream_mem, sizeof(stream_mem), stream.len + 1};
+			int unstuffed_size = PPP_unstuff(&unstuffed, &stuffed);
+
+			if(unstuffed_size != 0)
+			{
+				frame_size = unstuffed_size;
+				found_frame_count++;
+				if(found_frame_count == 1)
+				{
+					TEST_ASSERT_EQUAL(1, unstuffed.length);
+					TEST_ASSERT_EQUAL(0, unstuffed.buf[0]);
+				}
+				if(found_frame_count == 2)
+				{
+					TEST_ASSERT_EQUAL(5, unstuffed.length);
+					size_t unstuffed_idx = 0;
+					for(int i = 1; i <= 5; i++)
+					{
+						TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
+					}
+				}
+				else if(found_frame_count == 3)
+				{
+					TEST_ASSERT_EQUAL(1, frame_size);
+					TEST_ASSERT_EQUAL(frame_size, unstuffed.length);
+					TEST_ASSERT_EQUAL(0, unstuffed.buf[0]);
+				}
+				else if(found_frame_count == 4)
+				{
+					TEST_ASSERT_EQUAL(3, unstuffed.length);
+					size_t unstuffed_idx = 0;
+					for(int i = 6; i <= 8; i++)
+					{
+						TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
+					}
+				}
+				else if(found_frame_count == 5)
+				{
+					TEST_ASSERT_EQUAL(2, unstuffed.length);
+					size_t unstuffed_idx = 0;
+					for(int i = 7; i <= 8; i++)
+					{
+						TEST_ASSERT_EQUAL(i, unstuffed.buf[unstuffed_idx++]);
+					}
+				}
+
+			}
+			
+		}
+	}
+	TEST_ASSERT_EQUAL(5, found_frame_count);
+}
+
+
 
 void test_bytestream_cobs_multiple_strays(void)
 {
