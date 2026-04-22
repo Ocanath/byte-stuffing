@@ -506,3 +506,64 @@ void test_dma_handler(void)
         }
     }
 }
+
+
+
+
+void test_stream_strings(void)
+{
+	const char * teststr = "~hello~~goodbye~\0~~~~~~stray~~characters~}}}}~";
+
+	
+}
+
+void test_encode_strings(void)
+{
+	char teststr[] = "}}}}~~~~~~~~}}}}";
+	size_t len = strlen(teststr);	
+
+	ppp_buffer_t inplace = {
+		.buf = (unsigned char *)teststr,
+		.size = sizeof(teststr),
+		.length = len
+	};
+	TEST_ASSERT_EQUAL(0, PPP_stuff_single_buffer(&inplace));	//this should fail due to lack of overhead
+
+	ppp_buffer_t unstuffed = {
+		(unsigned char *)teststr,
+		sizeof(teststr),
+		len
+	};
+	unsigned char stuff_mem_small_1[sizeof(teststr) - 1] = {};
+	unsigned char stuff_mem_small_2[(sizeof(teststr) - 1)*2] = {};	//knock off the null terminator
+	unsigned char stuff_mem_just_right[(sizeof(teststr)-1)*2+1] = {}; //includes null terminator
+	//OVERHEAD IS INPUT*2 + 1
+	
+	ppp_buffer_t stuffed = {
+		(unsigned char *)stuff_mem_small_1,
+		sizeof(stuff_mem_small_1),
+		.length = 0
+	};
+	TEST_ASSERT_EQUAL(0, PPP_stuff(&unstuffed, &stuffed));
+
+	stuffed = (ppp_buffer_t){
+		(unsigned char *)stuff_mem_small_2,
+		sizeof(stuff_mem_small_2),
+		.length = 0
+	};
+	TEST_ASSERT_EQUAL(0, PPP_stuff(&unstuffed, &stuffed));
+
+	stuffed = (ppp_buffer_t){
+		(unsigned char *)stuff_mem_just_right,
+		sizeof(stuff_mem_just_right),
+		.length = 0
+	};
+	TEST_ASSERT_EQUAL(len*2+1, PPP_stuff(&unstuffed, &stuffed));
+
+	memset(unstuffed.buf, 0, unstuffed.size);
+	TEST_ASSERT_EQUAL(len, PPP_unstuff(&unstuffed, &stuffed));
+	TEST_ASSERT_EQUAL(len, unstuffed.length);
+	TEST_ASSERT_EQUAL_CHAR_ARRAY(teststr, unstuffed.buf, unstuffed.length);
+}
+
+

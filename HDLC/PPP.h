@@ -21,6 +21,7 @@ typedef struct ppp_buffer_t
 
 
 size_t PPP_stuff(ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer);
+size_t PPP_stuff_single_buffer(ppp_buffer_t * msg);
 size_t PPP_unstuff( ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * stuffed_buffer);
 size_t parse_PPP_stream(uint8_t new_byte, ppp_buffer_t * unstuffed_buffer, ppp_buffer_t * input_buffer);
 
