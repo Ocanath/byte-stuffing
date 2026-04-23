@@ -3,6 +3,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
 */
 typedef struct bytestream_t
@@ -22,6 +26,11 @@ enum {
 	BYTESTREAM_ERROR_EMPTYBUFFER = -3
 };
 
-int bytestream(unsigned char new_byte, bytestream_t * input, unsigned char delimiter);					//for cobs decode
+
+int bytestream(unsigned char new_byte, bytestream_t * input, unsigned char delimiter);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
