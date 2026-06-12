@@ -2,7 +2,6 @@
 #define COBS_STUFFING_H
 #include <stddef.h>
 #include <stdint.h>
-#include <assert.h>
 
 #ifdef __cplusplus
 extern "C" {
