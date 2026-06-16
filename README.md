@@ -1,71 +1,45 @@
 # Embedded Byte Stuffing Library
 
-## Introduction
+A minimal C library for byte stuffing, intended for use in embedded systems. Implements two framing protocols:
 
-This library contains C .h and .c files for byte stuffing. The library implements the following protocols:
+- **COBS** (Consistent Overhead Byte Stuffing) — deterministic overhead, no sentinel byte collisions, well-suited for binary data.
+- **PPP/HDLC** (High-Level Data Link Control asynchronous framing) — flag-byte delimited framing as used in Point-to-Point Protocol.
 
-- [High-Level Data Link Control](https://en.wikipedia.org/wiki/High-Level_Data_Link_Control#Asynchronous_framing) Asynchronous Framing protocol (part of PPP or Point to Point Protocol) - simply referred to as 'PPP' in this library.
-- [Consistent Overhead Bytes Stuffing](https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing) (COBS) 
+## Integration
 
-## Usage
+### Git submodule (recommended)
 
-### Option 1: Direct Integration
-Copy the headers into your project directly and add to your build environment.
+Add as a git submodule, then in your `CMakeLists.txt`:
 
-### Option 2: Git Submodule
-Add this library as a submodule and link to the headers.
+```cmake
+add_subdirectory(path/to/byte-stuffing)
+target_link_libraries(your_target PRIVATE cobs PPP)
+```
 
-### Option 3: CMake with FetchContent (Recommended)
-
-Add this to your `CMakeLists.txt`:
+### CMake FetchContent (also recommended)
 
 ```cmake
 include(FetchContent)
-
 FetchContent_Declare(
     byte_stuffing
     GIT_REPOSITORY https://github.com/Ocanath/byte-stuffing.git
-    GIT_TAG        master  # or specific commit/tag
+    GIT_TAG        master
 )
-
 FetchContent_MakeAvailable(byte_stuffing)
-
-# Link the libraries to your target
-target_link_libraries(your_target_name PRIVATE cobs PPP)
+target_link_libraries(your_target PRIVATE cobs PPP)
 ```
 
-### Manual Build
+### Direct copy
 
-To build the libraries manually:
+Copy the source files directly into your project and add them to your build environment.
+
+## Building
 
 ```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
+cmake -S . -B build
+cmake --build build
 ```
 
-This will generate:
-- `libcobs.a` - COBS (Consistent Overhead Byte Stuffing) library
-- `libPPP.a` - PPP/HDLC (High-Level Data Link Control) library
+## Testing
 
-### C++ Integration
-
-Both libraries are C++ compatible. Include the headers in your C++ code:
-
-```cpp
-#include "cobs.h"    // COBS functionality
-#include "PPP.h"     // PPP/HDLC functionality
-```
-
-## Unit Tests
-
-### C Tests
-To run the C unit tests, install ceedling and simply run: `ceedling test:all`
-
-### Python Tests
-A Python implementation of COBS is available in `cobs.py`. To run the Python tests:
-
-```bash
-pip install pytest
-pytest Python\test_cobs.py -v
-```
+Unit tests run via ceedling (`ceedling test:all`). A Python COBS implementation with pytest-based tests is also included.
